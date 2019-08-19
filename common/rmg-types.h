@@ -47,4 +47,10 @@ typedef enum _RmgStatus {
   RMG_STATUS_OK
 } RmgStatus;
 
+typedef enum _RmgRunMode {
+    RUN_MODE_MASTER, 
+    RUN_MODE_SLAVE
+} RmgRunMode;
+
+
 G_END_DECLS

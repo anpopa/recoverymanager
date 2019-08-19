@@ -1,0 +1,68 @@
+/* rmg-defaults.h
+ *
+ * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * Except as contained in this notice, the name(s) of the above copyright
+ * holders shall not be used in advertising or otherwise to promote the sale,
+ * use or other dealings in this Software without prior written
+ * authorization.
+ */
+
+#pragma once
+
+#include <glib.h>
+
+G_BEGIN_DECLS
+
+#define RMG_VERSION "@version@"
+#define RMG_CONFIG_DIRECTORY "@config_dir@"
+#define RMG_INSTALL_PREFIX "@install_prefix@"
+
+#ifndef RMG_CONFIG_FILE_NAME
+#define RMG_CONFIG_FILE_NAME "recoverymanager.conf"
+#endif
+
+#ifndef RMG_DATABASE_FILE_NAME
+#define RMG_DATABASE_FILE_NAME "recoverymanager.db"
+#endif
+
+#ifndef RMG_DATABASE_DIR
+#define RMG_DATABASE_DIR "/var/lib/rmgr"
+#endif
+
+#ifndef RMG_UNITS_DIR
+#define RMG_UNITS_DIR "/etc/rmgrunits"
+#endif
+
+#ifndef RMG_RUN_MODE
+#define RMG_RUN_MODE "auto"
+#endif
+
+#ifndef RMG_IPC_SOCK_ADDR
+#define RMG_IPC_SOCK_ADDR "/run/rmgr/rmgipc.sock"
+#endif
+
+#ifndef RMG_IPC_TIMEOUT_SEC
+#define RMG_IPC_TIMEOUT_SEC (15)
+#endif
+
+G_END_DECLS

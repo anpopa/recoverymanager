@@ -40,10 +40,9 @@ G_BEGIN_DECLS
  * @brief The option keys
  */
 typedef enum _RmgOptionsKey {
-  KEY_USER_NAME,
-  KEY_GROUP_NAME,
-  KEY_RUN_DIR,
-  KEY_DATABASE_FILE,
+  KEY_RUN_MODE,
+  KEY_UNITS_DIR,
+  KEY_DATABASE_DIR,
   KEY_IPC_SOCK_ADDR,
   KEY_IPC_TIMEOUT_SEC
 } RmgOptionsKey;
@@ -105,3 +104,4 @@ gchar *rmg_options_string_for (RmgOptions *opts, RmgOptionsKey key);
 gint64 rmg_options_long_for (RmgOptions *opts, RmgOptionsKey key);
 
 G_END_DECLS
+

@@ -1,4 +1,4 @@
-/* rmg-application.h
+/* rmh-application.h
  *
  * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
  *
@@ -33,11 +33,9 @@
 #include "rmg-types.h"
 #include "rmg-logging.h"
 #include "rmg-options.h"
-#include "rmg-server.h"
 #include "rmg-journal.h"
-#ifdef WITH_SYSTEMD
 #include "rmg-sdnotify.h"
-#endif
+#include "rmh-server.h"
 
 #include <glib.h>
 #include <stdlib.h>
@@ -45,57 +43,55 @@
 G_BEGIN_DECLS
 
 /**
- * @struct RmgApplication
+ * @struct RmhApplication
  * @brief Crashmanager application object referencing main objects
  */
-typedef struct _RmgApplication {
+typedef struct _RmhApplication {
   RmgOptions *options;
   RmgServer *server;
   RmgJournal *journal;
-#ifdef WITH_SYSTEMD
   RmgSDNotify *sdnotify;
-#endif
   GMainLoop *mainloop;
   grefcount rc;           /**< Reference counter variable  */
-} RmgApplication;
+} RmhApplication;
 
 /**
- * @brief Create a new RmgApplication object
+ * @brief Create a new RmhApplication object
  * @param config Full path to the configuration file
  * @param error An error object must be provided. If an error occurs during
  * initialization the error is reported and application should not use the
  * returned object. If the error is set the object is invalid and needs to be
  * released.
  */
-RmgApplication *rmg_application_new (const gchar *config, GError **error);
+RmhApplication *rmh_application_new (const gchar *config, GError **error);
 
 /**
- * @brief Aquire RmgApplication object
+ * @brief Aquire RmhApplication object
  * @param app The object to aquire
  * @return The aquiered app object
  */
-RmgApplication *rmg_application_ref (RmgApplication *app);
+RmhApplication *rmh_application_ref (RmhApplication *app);
 
 /**
- * @brief Release a RmgApplication object
+ * @brief Release a RmhApplication object
  * @param app The rmg application object to release
  */
-void rmg_application_unref (RmgApplication *app);
+void rmh_application_unref (RmhApplication *app);
 
 /**
  * @brief Execute rmg application
  * @param app The rmg application object
  * @return If run was succesful CDH_OK is returned
  */
-RmgStatus rmg_application_execute (RmgApplication *app);
+RmgStatus rmh_application_execute (RmhApplication *app);
 
 /**
  * @brief Get main event loop reference
  * @param app The rmg application object
  * @return A pointer to the main event loop
  */
-GMainLoop *rmg_application_get_mainloop (RmgApplication *app);
+GMainLoop *rmh_application_get_mainloop (RmhApplication *app);
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgApplication, rmg_application_unref);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmhApplication, rmh_application_unref);
 
 G_END_DECLS

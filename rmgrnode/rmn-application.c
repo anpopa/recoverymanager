@@ -27,7 +27,7 @@
  * authorization.
  */
 
-#include "rmg-application.h"
+#include "rmn-application.h"
 #include "rmg-utils.h"
 
 #include <glib.h>
@@ -40,33 +40,48 @@
 #include <unistd.h>
 #include <errno.h>
 
-RmgApplication *
-rmg_application_new (const gchar *config, GError **error)
+RmnApplication *
+rmn_application_new (const gchar *config, GError **error)
 {
-  RmgApplication *app = g_new0 (RmgApplication, 1);
+  RmnApplication *app = g_new0 (RmnApplication, 1);
+  g_autofree gchar *opt_dbdir = NULL;
 
   g_assert (app);
   g_assert (error);
 
   g_ref_count_init (&app->rc);
 
-#ifdef WITH_SYSTEMD
   /* construct sdnotify noexept */
   app->sdnotify = rmg_sdnotify_new ();
-#endif
 
   /* construct options noexept */
   app->options = rmg_options_new (config);
+
+  opt_dbdir = rmg_options_string_for (app->options, KEY_DATABASE_DIR);
+  if (g_mkdir_with_parents (opt_dbdir, 0755) != 0)
+    {
+      g_set_error (error, 
+                   g_quark_from_static_string ("ApplicationNew"), 
+                   1, 
+                   "Cannot create database directory");
+      return app;
+    }
 
   /* construct journal and return if an error is set */
   app->journal = rmg_journal_new (app->options, error);
   if (*error != NULL)
     return app;
 
-  /* construct server and return if an error is set */
-  app->server = rmg_server_new (app->options, app->transfer, app->journal, error);
-  if (*error != NULL)
-    return app;
+  /* construct master manager and return if an error is set */
+  app->manager = rmn_manager_new (app->options);
+  if (rmn_manager_connect (app->manager) != RMG_STATUS_OK)
+    {
+      g_set_error (error, 
+                   g_quark_from_static_string ("ApplicationNew"), 
+                   1, 
+                   "Cannot connect to master socket in slave mode");
+          return app;
+    }
 
   /* construct mainloop noexept */
   app->mainloop = g_main_loop_new (NULL, TRUE);
@@ -74,8 +89,8 @@ rmg_application_new (const gchar *config, GError **error)
   return app;
 }
 
-RmgApplication *
-rmg_application_ref (RmgApplication *app)
+RmnApplication *
+rmn_application_ref (RmnApplication *app)
 {
   g_assert (app);
   g_ref_count_inc (&app->rc);
@@ -83,21 +98,21 @@ rmg_application_ref (RmgApplication *app)
 }
 
 void
-rmg_application_unref (RmgApplication *app)
+rmn_application_unref (RmnApplication *app)
 {
   g_assert (app);
 
   if (g_ref_count_dec (&app->rc) == TRUE)
     {
-      if (app->server != NULL)
-        rmg_server_unref (app->server);
-
+      if (app->manager != NULL)
+        rmn_manager_unref (app->manager);
+      
       if (app->journal != NULL)
         rmg_journal_unref (app->journal);
-#ifdef WITH_SYSTEMD
+      
       if (app->sdnotify != NULL)
         rmg_sdnotify_unref (app->sdnotify);
-#endif
+      
       if (app->options != NULL)
         rmg_options_unref (app->options);
 
@@ -109,14 +124,14 @@ rmg_application_unref (RmgApplication *app)
 }
 
 GMainLoop *
-rmg_application_get_mainloop (RmgApplication *app)
+rmn_application_get_mainloop (RmnApplication *app)
 {
   g_assert (app);
   return app->mainloop;
 }
 
 RmgStatus
-rmg_application_execute (RmgApplication *app)
+rmn_application_execute (RmnApplication *app)
 {
   /* run the main event loop */
   g_main_loop_run (app->mainloop);

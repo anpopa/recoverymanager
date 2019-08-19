@@ -27,16 +27,16 @@
  * authorization.
  */
 
-#include "rmg-manager.h"
+#include "rmn-manager.h"
 #include "rmg-defaults.h"
 
 #include <errno.h>
 #include <stdio.h>
 
-RmgManager *
-rmg_manager_new (RmgOptions *opts)
+RmnManager *
+rmn_manager_new (RmgOptions *opts)
 {
-  RmgManager *c = g_new0 (RmgManager, 1);
+  RmnManager *c = g_new0 (RmnManager, 1);
 
   g_assert (opts);
 
@@ -49,8 +49,8 @@ rmg_manager_new (RmgOptions *opts)
   return c;
 }
 
-RmgManager *
-rmg_manager_ref (RmgManager *c)
+RmnManager *
+rmn_manager_ref (RmnManager *c)
 {
   g_assert (c);
   g_ref_count_inc (&c->rc);
@@ -58,14 +58,14 @@ rmg_manager_ref (RmgManager *c)
 }
 
 void
-rmg_manager_unref (RmgManager *c)
+rmn_manager_unref (RmnManager *c)
 {
   g_assert (c);
 
   if (g_ref_count_dec (&c->rc) == TRUE)
     {
-      if (rmg_manager_connected (c) == TRUE)
-        (void)rmg_manager_disconnect (c);
+      if (rmn_manager_connected (c) == TRUE)
+        (void)rmn_manager_disconnect (c);
 
       rmg_options_unref (c->opts);
       g_free (c);
@@ -73,7 +73,7 @@ rmg_manager_unref (RmgManager *c)
 }
 
 RmgStatus
-rmg_manager_connect (RmgManager *c)
+rmn_manager_connect (RmnManager *c)
 {
   g_autofree gchar *opt_sock_addr = NULL;
   g_autofree gchar *opt_run_dir = NULL;
@@ -124,7 +124,7 @@ rmg_manager_connect (RmgManager *c)
 }
 
 RmgStatus
-rmg_manager_disconnect (RmgManager *c)
+rmn_manager_disconnect (RmnManager *c)
 {
   if (!c->connected)
     return RMG_STATUS_ERROR;
@@ -141,14 +141,14 @@ rmg_manager_disconnect (RmgManager *c)
 }
 
 gboolean
-rmg_manager_connected (RmgManager *c)
+rmn_manager_connected (RmnManager *c)
 {
   g_assert (c);
   return c->connected;
 }
 
 RmgStatus
-rmg_manager_send (RmgManager *c,
+rmn_manager_send (RmnManager *c,
                   RmgMessage *m)
 {
   fd_set wfd;

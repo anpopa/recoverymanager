@@ -1,18 +1,18 @@
 ###############################################################################
 #
-#  Coredump manager
+#  Recovery manager
 #
 ###############################################################################
 [Unit]
-Description=Crasmanager service
+Description=Recovery Manager service
 
 [Service]
 Type=simple
 User=root
 Group=root
-ExecStart=@install_prefix@/bin/crashmanager
-RuntimeDirectory="crashmanager"
-StateDirectory="crashmanager"
+ExecStart=@install_prefix@/bin/recoverymanager
+RuntimeDirectory="rmgr"
+StateDirectory="rmgr"
 WatchdogSec=30
 
 [Install]

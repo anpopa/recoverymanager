@@ -51,6 +51,7 @@ configure_file(input : 'source/rmg-message-type.h.in',
   configuration : rmg_msgtype_data)
 
 rmg_config_data = configuration_data()
+rmg_config_data.set('config_dir', get_option('CONFDIR'))
 rmg_config_data.set('version', meson.project_version())
 configure_file(input : 'config/recoverymanager.conf.in',
   output : 'recoverymanager.conf',
@@ -63,18 +64,13 @@ if get_option('LXC')
   dep_lxc = dependency('lxc', version : '>=3.0')
 endif
 
-dep_systemd = declare_dependency()
-if get_option('SYSTEMD')
-  add_project_arguments('-DWITH_SYSTEMD', language : 'c')
-  dep_systemd = dependency('libsystemd')
-
-  sd_service_data = configuration_data()
-  sd_service_data.set('install_prefix', get_option('prefix'))
-  configure_file(input : 'config/recoverymanager.service.in',
+dep_systemd = dependency('libsystemd')
+sd_service_data = configuration_data()
+sd_service_data.set('install_prefix', get_option('prefix'))
+configure_file(input : 'config/recoverymanager.service.in',
     output : 'recoverymanager.service',
     configuration : sd_service_data,
     install_dir : '/etc/systemd/system')
-endif
 
 dep_genivi_dlt = declare_dependency()
 if get_option('GENIVI_DLT')
@@ -90,35 +86,62 @@ endif
 dep_glib = dependency('glib-2.0', version : '>=2.58')
 dep_sqlite = dependency('sqlite3')
 
-recoverymanager_sources = [
-    'source/rmg-message.c',
-    'source/rmg-logging.c',
-    'source/rmg-options.c',
-    'source/rmg-utils.c',
-    'source/rmg-main.c',
-    'source/rmg-client.c',
-    'source/rmg-server.c',
-    'source/rmg-janitor.c',
-    'source/rmg-transfer.c',
-    'source/rmg-journal.c',
-    'source/rmg-application.c',
-    ]
+if get_option('RMGRHOST')
+	rmgrhost_sources = [
+    	'common/rmg-message.c',
+    	'common/rmg-logging.c',
+    	'common/rmg-options.c',
+    	'common/rmg-utils.c',
+    	'common/rmg-sdnotify.c',
+    	'common/rmg-journal.c',
+    	'source/rmh-main.c',
+    	'source/rmh-client.c',
+    	'source/rmh-server.c',
+    	'source/rmh-application.c',
+    	]
 
-if get_option('SYSTEMD')
-  recoverymanager_sources += 'source/rmg-sdnotify.c'
+	rmgrhost_deps = [
+    	dep_glib,
+    	dep_lxc,
+    	dep_systemd,
+    	dep_sqlite,
+    	dep_genivi_dlt,
+    	]
+
+	executable('rmgrhost', 
+    	rmgrhost_sources,
+    	dependencies: rmgrhost_deps,
+    	c_args: rmg_c_compiler_args,
+    	install: true,
+    	)
 endif
 
-recoverymanager_deps = [
-    dep_glib,
-    dep_lxc,
-    dep_systemd,
-    dep_sqlite,
-    dep_genivi_dlt,
-    ]
+if get_option('RMGRNODE')
+	rmgrnode_sources = [
+    	'common/rmg-message.c',
+    	'common/rmg-logging.c',
+    	'common/rmg-options.c',
+    	'common/rmg-utils.c',
+    	'common/rmg-sdnotify.c',
+    	'common/rmg-journal.c',
+    	'source/rmn-main.c',
+    	'source/rmn-manager.c',
+    	'source/rmn-application.c',
+    	]
 
-executable('recoverymanager', 
-    recoverymanager_sources,
-    dependencies: recoverymanager_deps,
-    c_args: rmg_c_compiler_args,
-    install: true,
-    )
+	rmgrnode_deps = [
+    	dep_glib,
+    	dep_lxc,
+    	dep_systemd,
+    	dep_sqlite,
+    	dep_genivi_dlt,
+    	]
+
+	executable('rmgrnode', 
+    	rmgrhost_sources,
+    	dependencies: rmgrnode_deps,
+    	c_args: rmg_c_compiler_args,
+    	install: true,
+    	)
+endif
+

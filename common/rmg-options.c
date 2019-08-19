@@ -103,45 +103,35 @@ rmg_options_string_for (RmgOptions *opts,
 {
   switch (key)
     {
-    case KEY_USER_NAME:
+    case KEY_RUN_MODE:
       if (opts->has_conf)
         {
-          char *tmp = g_key_file_get_string (opts->conf, "recoverymanager", "UserName", NULL);
+          gchar *tmp = g_key_file_get_string (opts->conf, "recoverymanager", "RunMode", NULL);
 
           if (tmp != NULL)
             return tmp;
         }
-      return g_strdup (RMG_USER_NAME);
+      return g_strdup (RMG_RUN_MODE);
 
-    case KEY_GROUP_NAME:
+    case KEY_DATABASE_DIR:
       if (opts->has_conf)
         {
-          gchar *tmp = g_key_file_get_string (opts->conf, "recoverymanager", "GroupName", NULL);
+          gchar *tmp = g_key_file_get_string (opts->conf, "recoverymanager", "DatabaseDirectory", NULL);
 
           if (tmp != NULL)
             return tmp;
         }
-      return g_strdup (RMG_GROUP_NAME);
-
-    case KEY_RUN_DIR:
+      return g_strdup (RMG_DATABASE_DIR);
+    
+    case KEY_UNITS_DIR:
       if (opts->has_conf)
         {
-          gchar *tmp = g_key_file_get_string (opts->conf, "recoverymanager", "RunDirectory", NULL);
+          gchar *tmp = g_key_file_get_string (opts->conf, "recoverymanager", "UnitsDirectory", NULL);
 
           if (tmp != NULL)
             return tmp;
         }
-      return g_strdup (RMG_RUN_DIR);
-
-    case KEY_DATABASE_FILE:
-      if (opts->has_conf)
-        {
-          gchar *tmp = g_key_file_get_string (opts->conf, "recoverymanager", "DatabaseFile", NULL);
-
-          if (tmp != NULL)
-            return tmp;
-        }
-      return g_strdup (RMG_DATABASE_FILE);
+      return g_strdup (RMG_UNITS_DIR);
 
     case KEY_IPC_SOCK_ADDR:
       if (opts->has_conf)
@@ -214,3 +204,4 @@ rmg_options_long_for (RmgOptions *opts,
 
   return value;
 }
+

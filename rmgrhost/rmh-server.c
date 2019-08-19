@@ -1,4 +1,4 @@
-/* rmg-server.c
+/* rmh-server.c
  *
  * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
  *
@@ -27,8 +27,8 @@
  * authorization.
  */
 
-#include "rmg-server.h"
-#include "rmg-client.h"
+#include "rmh-server.h"
+#include "rmh-client.h"
 
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -109,7 +109,7 @@ server_source_dispatch (GSource *source, GSourceFunc callback, gpointer rmgserve
 static gboolean
 server_source_callback (gpointer rmgserver)
 {
-  RmgServer *server = (RmgServer *)rmgserver;
+  RmhServer *server = (RmhServer *)rmgserver;
   gint clientfd;
 
   g_assert (server);
@@ -118,7 +118,7 @@ server_source_callback (gpointer rmgserver)
 
   if (clientfd >= 0)
     {
-      RmgClient *client = rmg_client_new (clientfd, server->journal);
+      RmhClient *client = rmh_client_new (clientfd, server->journal);
 
       RMG_UNUSED (client);
 
@@ -140,12 +140,12 @@ server_source_destroy_notify (gpointer rmgserver)
   g_info ("Server terminated");
 }
 
-RmgServer *
-rmg_server_new (RmgOptions *options,
+RmhServer *
+rmh_server_new (RmgOptions *options,
                 RmgJournal *journal,
                 GError **error)
 {
-  RmgServer *server = NULL;
+  RmhServer *server = NULL;
   struct timeval tout;
   glong timeout;
 
@@ -153,7 +153,7 @@ rmg_server_new (RmgOptions *options,
   g_assert (transfer);
   g_assert (journal);
 
-  server = (RmgServer *)g_source_new (&server_source_funcs, sizeof(RmgServer));
+  server = (RmhServer *)g_source_new (&server_source_funcs, sizeof(RmhServer));
   g_assert (server);
 
   g_ref_count_init (&server->rc);
@@ -188,8 +188,8 @@ rmg_server_new (RmgOptions *options,
   return server;
 }
 
-RmgServer *
-rmg_server_ref (RmgServer *server)
+RmhServer *
+rmh_server_ref (RmhServer *server)
 {
   g_assert (server);
   g_ref_count_inc (&server->rc);
@@ -197,7 +197,7 @@ rmg_server_ref (RmgServer *server)
 }
 
 void
-rmg_server_unref (RmgServer *server)
+rmh_server_unref (RmhServer *server)
 {
   g_assert (server);
 
@@ -210,7 +210,7 @@ rmg_server_unref (RmgServer *server)
 }
 
 RmgStatus
-rmg_server_bind_and_listen (RmgServer *server)
+rmh_server_bind_and_listen (RmhServer *server)
 {
   g_autofree gchar *sock_addr = NULL;
   g_autofree gchar *run_dir = NULL;

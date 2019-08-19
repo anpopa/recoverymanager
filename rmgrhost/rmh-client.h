@@ -1,4 +1,4 @@
-/* rmg-defaults.h
+/* rmh-client.h
  *
  * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
  *
@@ -29,40 +29,50 @@
 
 #pragma once
 
+#include "rmg-types.h"
+#include "rmg-message.h"
+#include "rmg-journal.h"
+
 #include <glib.h>
 
 G_BEGIN_DECLS
 
-#define RMG_VERSION "@version@"
-#define RMG_CONFIG_DIRECTORY "@config_dir@"
-#define RMG_INSTALL_PREFIX "@install_prefix@"
+/**
+ * @struct RmhClient
+ * @brief The RmhClient opaque data structure
+ */
+typedef struct _RmhClient {
+  GSource source;  /**< Event loop source */
+  gpointer tag;     /**< Unix server socket tag  */
+  grefcount rc;     /**< Reference counter variable  */
+  gint sockfd;      /**< Module file descriptor (client fd) */
+  guint64 id;       /**< Client instance id */
 
-#ifndef RMG_CONFIG_FILE_NAME
-#define RMG_CONFIG_FILE_NAME "recoverymanager.conf"
-#endif
+  RmgJournal *journal; /**< Own a reference to the journal object */
+} RmhClient;
 
-#ifndef RMG_USER_NAME
-#define RMG_USER_NAME "root"
-#endif
+/*
+ * @brief Create a new client object
+ * @param clientfd Socket file descriptor accepted by the server
+ * @param journal A pointer to the RmgJournal object created by the main
+ * application
+ * @return On success return a new RmhClient object otherwise return NULL
+ */
+RmhClient *rmh_client_new (gint clientfd, RmgJournal *journal);
 
-#ifndef RMG_GROUP_NAME
-#define RMG_GROUP_NAME "root"
-#endif
+/**
+ * @brief Aquire client object
+ * @param client Pointer to the client object
+ * @return The referenced client object
+ */
+RmhClient *rmh_client_ref (RmhClient *client);
 
-#ifndef RMG_DATABASE_FILE
-#define RMG_DATABASE_FILE "/var/lib/recoverymanager/.rmg.db"
-#endif
+/**
+ * @brief Release client object
+ * @param client Pointer to the client object
+ */
+void rmh_client_unref (RmhClient *client);
 
-#ifndef RMG_RUN_DIR
-#define RMG_RUN_DIR "/run/recoverymanager"
-#endif
-
-#ifndef RMG_IPC_SOCK_ADDR
-#define RMG_IPC_SOCK_ADDR ".rmgipc.sock"
-#endif
-
-#ifndef RMG_IPC_TIMEOUT_SEC
-#define RMG_IPC_TIMEOUT_SEC (15)
-#endif
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmhClient, rmh_client_unref);
 
 G_END_DECLS

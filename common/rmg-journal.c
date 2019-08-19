@@ -74,9 +74,8 @@ rmg_journal_new (RmgOptions *options, GError **error)
 {
   RmgJournal *journal = NULL;
   g_autofree gchar *sql = NULL;
-  g_autofree gchar *opt_dbpath = NULL;
-  g_autofree gchar *opt_user = NULL;
-  g_autofree gchar *opt_group = NULL;
+  g_autofree gchar *opt_dbdir = NULL;
+  g_autofree gchar *dbfile = NULL;
   gchar *query_error = NULL;
   JournalQueryData data = {
     .type = QUERY_CREATE,
@@ -89,13 +88,12 @@ rmg_journal_new (RmgOptions *options, GError **error)
 
   g_ref_count_init (&journal->rc);
 
-  opt_dbpath = rmg_options_string_for (options, KEY_DATABASE_FILE);
-  opt_user = rmg_options_string_for (options, KEY_USER_NAME);
-  opt_group = rmg_options_string_for (options, KEY_GROUP_NAME);
+  opt_dbdir = rmg_options_string_for (options, KEY_DATABASE_DIR);
+  dbfile = g_build_filename (opt_dbdir, MG_DATABASE_FILE_NAME, NULL);
 
-  if (sqlite3_open (opt_dbpath, &journal->database))
+  if (sqlite3_open (dbfile, &journal->database))
     {
-      g_warning ("Cannot open journal database at path %s", opt_dbpath);
+      g_warning ("Cannot open journal database at path %s", dbfile);
       g_set_error (error, g_quark_from_static_string ("JournalNew"), 1, "Database open failed");
     }
   else
@@ -121,9 +119,6 @@ rmg_journal_new (RmgOptions *options, GError **error)
           g_warning ("Fail to create crash table. SQL error %s", query_error);
           g_set_error (error, g_quark_from_static_string ("JournalNew"), 1, "Create crash table fail");
         }
-
-      if (rmg_utils_chown (opt_dbpath, opt_user, opt_group) == RMG_STATUS_ERROR)
-        g_warning ("Failed to set user and group owner for database %s", opt_dbpath);
     }
 
   return journal;
