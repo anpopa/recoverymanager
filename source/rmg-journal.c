@@ -34,18 +34,19 @@
  * @enum Journal query type
  */
 typedef enum _JournalQueryType {
-  QUERY_CREATE,
+    QUERY_CREATE,
 } JournalQueryType;
 
 /**
  * @enum Journal query data object
  */
 typedef struct _JournalQueryData {
-  JournalQueryType type;
-  gpointer response;
+    JournalQueryType type;
+    gpointer response;
 } JournalQueryData;
 
-const gchar *rmg_journal_table_name = "CrashTable";
+const gchar *rmg_table_services = "Services";
+const gchar *rmg_table_actions = "Actions";
 
 /**
  * @brief SQlite3 callback
@@ -73,13 +74,12 @@ RmgJournal *
 rmg_journal_new (RmgOptions *options, GError **error)
 {
   RmgJournal *journal = NULL;
-  g_autofree gchar *sql = NULL;
   g_autofree gchar *opt_dbdir = NULL;
   g_autofree gchar *dbfile = NULL;
   gchar *query_error = NULL;
   JournalQueryData data = {
-    .type = QUERY_CREATE,
-    .response = NULL
+      .type = QUERY_CREATE,
+      .response = NULL
   };
 
   journal = g_new0 (RmgJournal, 1);
@@ -98,26 +98,46 @@ rmg_journal_new (RmgOptions *options, GError **error)
     }
   else
     {
-      sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s       "
-                             "(ID INT PRIMARY KEY     NOT   NULL, "
-                             "PROCNAME        TEXT    NOT   NULL, "
-                             "CRASHID         TEXT    NOT   NULL, "
-                             "VECTORID        TEXT    NOT   NULL, "
-                             "CONTEXTID       TEXT    NOT   NULL, "
-                             "FILEPATH        TEXT    NOT   NULL, "
-                             "FILESIZE        INT     NOT   NULL, "
-                             "PID             INT     NOT   NULL, "
-                             "SIGNAL          INT     NOT   NULL, "
-                             "TIMESTAMP       INT     NOT   NULL, "
-                             "OSVERSION       TEXT    NOT   NULL, "
-                             "TSTATE          BOOL    NOT   NULL, "
-                             "RSTATE          BOOL    NOT   NULL);",
-                             rmg_journal_table_name);
+      g_autofree gchar *create_services_sql = NULL;
 
-      if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error) != SQLITE_OK)
+      services_sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s      "
+                                      "(ID INT PRIMARY KEY    NOT   NULL, "
+                                      "NAME            TEXT   NOT   NULL, "
+                                      "VERSION         INT    NOT   NULL, "
+                                      "GRADIANT        INT    NOT   NULL, "
+                                      "RELAXING        BOOL   NOT   NULL, "
+                                      "TIMEOUT         INT    NOT   NULL);",
+                                      rmg_table_services);
+
+      if (sqlite3_exec (journal->database, services_sql, sqlite_callback, &data, &query_error)
+          != SQLITE_OK)
         {
           g_warning ("Fail to create crash table. SQL error %s", query_error);
-          g_set_error (error, g_quark_from_static_string ("JournalNew"), 1, "Create crash table fail");
+          g_set_error (error,
+                       g_quark_from_static_string ("JournalNew"),
+                       1,
+                       "Create services table fail");
+        }
+      else
+        {
+          g_autofree gchar *actions_sql = NULL;
+
+          actions_sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s      "
+                                         "(ID INT PRIMARY KEY    NOT   NULL, "
+                                         "SERVICE         INT    NOT   NULL, "
+                                         "TYPE            INT    NOT   NULL, "
+                                         "NEXTACTION      INT    NOT   NULL);",
+                                         rmg_table_actions);
+
+          if (sqlite3_exec (journal->database, actions_sql, sqlite_callback, &data, &query_error)
+              != SQLITE_OK)
+            {
+              g_warning ("Fail to create crash table. SQL error %s", query_error);
+              g_set_error (error,
+                           g_quark_from_static_string ("JournalNew"),
+                           1,
+                           "Create actions table fail");
+            }
         }
     }
 

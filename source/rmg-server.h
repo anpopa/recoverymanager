@@ -1,4 +1,4 @@
-/* rmh-client.h
+/* rmg-server.h
  *
  * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
  *
@@ -30,7 +30,7 @@
 #pragma once
 
 #include "rmg-types.h"
-#include "rmg-message.h"
+#include "rmg-options.h"
 #include "rmg-journal.h"
 
 #include <glib.h>
@@ -38,41 +38,52 @@
 G_BEGIN_DECLS
 
 /**
- * @struct RmhClient
- * @brief The RmhClient opaque data structure
+ * @struct RmgServer
+ * @brief The RmgServer opaque data structure
  */
-typedef struct _RmhClient {
+typedef struct _RmgServer {
   GSource source;  /**< Event loop source */
-  gpointer tag;     /**< Unix server socket tag  */
   grefcount rc;     /**< Reference counter variable  */
-  gint sockfd;      /**< Module file descriptor (client fd) */
-  guint64 id;       /**< Client instance id */
-
-  RmgJournal *journal; /**< Own a reference to the journal object */
-} RmhClient;
+  gpointer tag;     /**< Unix server socket tag  */
+  gint sockfd;      /**< Module file descriptor (server listen fd) */
+  RmgOptions *options; /**< Own reference to global options */
+  RmgJournal *journal; /**< Own a reference to journal object */
+} RmgServer;
 
 /*
- * @brief Create a new client object
- * @param clientfd Socket file descriptor accepted by the server
+ * @brief Create a new server object
+ *
+ * @param options A pointer to the RmgOptions object created by the main
+ * application
+ * @param transfer A pointer to the RmgTransfer object created by the main
+ * application
  * @param journal A pointer to the RmgJournal object created by the main
  * application
- * @return On success return a new RmhClient object otherwise return NULL
+ *
+ * @return On success return a new RmgServer object otherwise return NULL
  */
-RmhClient *rmh_client_new (gint clientfd, RmgJournal *journal);
+RmgServer *rmg_server_new (RmgOptions *options, RmgTransfer *transfer, RmgJournal *journal, GError **error);
 
 /**
- * @brief Aquire client object
- * @param client Pointer to the client object
- * @return The referenced client object
+ * @brief Aquire server object
+ * @param server Pointer to the server object
+ * @return The referenced server object
  */
-RmhClient *rmh_client_ref (RmhClient *client);
+RmgServer *rmg_server_ref (RmgServer *server);
 
 /**
- * @brief Release client object
- * @param client Pointer to the client object
+ * @brief Start the server an listen for clients
+ * @param server Pointer to the server object
+ * @return If server starts listening the function return RMG_STATUS_OK
  */
-void rmh_client_unref (RmhClient *client);
+RmgStatus rmg_server_bind_and_listen (RmgServer *server);
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmhClient, rmh_client_unref);
+/**
+ * @brief Release server object
+ * @param server Pointer to the server object
+ */
+void rmg_server_unref (RmgServer *server);
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgServer, rmg_server_unref);
 
 G_END_DECLS

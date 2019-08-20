@@ -11,8 +11,8 @@ Type=simple
 User=root
 Group=root
 ExecStart=@install_prefix@/bin/recoverymanager
-RuntimeDirectory="rmgr"
-StateDirectory="rmgr"
+RuntimeDirectory="recoverymanager"
+StateDirectory="recoverymanager"
 WatchdogSec=30
 
 [Install]

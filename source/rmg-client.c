@@ -1,4 +1,4 @@
-/* rmh-client.c
+/* rmg-client.c
  *
  * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
  *
@@ -27,7 +27,7 @@
  * authorization.
  */
 
-#include "rmh-client.h"
+#include "rmg-client.h"
 #include "rmg-utils.h"
 
 #include <sys/types.h>
@@ -61,7 +61,7 @@ static void client_source_destroy_notify (gpointer data);
 /**
  * @brief Process message from crashhandler instance
  */
-static void process_message (RmhClient *c, RmgMessage *msg);
+static void process_message (RmgClient *c, RmgMessage *msg);
 
 /**
  * @brief GSourceFuncs vtable
@@ -108,7 +108,7 @@ client_source_dispatch (GSource *source,
 static gboolean
 client_source_callback (gpointer data)
 {
-  RmhClient *client = (RmhClient *)data;
+  RmgClient *client = (RmgClient *)data;
   gboolean status = TRUE;
   RmgMessage msg;
 
@@ -136,16 +136,16 @@ client_source_callback (gpointer data)
 static void
 client_source_destroy_notify (gpointer data)
 {
-  RmhClient *client = (RmhClient *)data;
+  RmgClient *client = (RmgClient *)data;
 
   g_assert (client);
   g_debug ("Client %d disconnected", client->sockfd);
 
-  rmh_client_unref (client);
+  rmg_client_unref (client);
 }
 
 static void
-process_message (RmhClient *c,
+process_message (RmgClient *c,
                  RmgMessage *msg)
 {
   g_autofree gchar *tmp_id = NULL;
@@ -168,11 +168,11 @@ process_message (RmhClient *c,
     }
 }
 
-RmhClient *
-rmh_client_new (gint clientfd,
+RmgClient *
+rmg_client_new (gint clientfd,
                 RmgJournal *journal)
 {
-  RmhClient *client = (RmhClient *)g_source_new (&client_source_funcs, sizeof(RmhClient));
+  RmgClient *client = (RmgClient *)g_source_new (&client_source_funcs, sizeof(RmgClient));
 
   g_assert (client);
 
@@ -194,8 +194,8 @@ rmh_client_new (gint clientfd,
   return client;
 }
 
-RmhClient *
-rmh_client_ref (RmhClient *client)
+RmgClient *
+rmg_client_ref (RmgClient *client)
 {
   g_assert (client);
   g_ref_count_inc (&client->rc);
@@ -203,7 +203,7 @@ rmh_client_ref (RmhClient *client)
 }
 
 void
-rmh_client_unref (RmhClient *client)
+rmg_client_unref (RmgClient *client)
 {
   g_assert (client);
 

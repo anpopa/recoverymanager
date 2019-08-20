@@ -48,56 +48,56 @@ G_BEGIN_DECLS
 #endif
 
 /**
- * @struct rmn_manager
+ * @struct rmg_manager
  * @brief The coredump handler manager object
  */
-typedef struct _RmnManager {
+typedef struct _RmgManager {
   grefcount rc;                /**< Reference counter variable  */
   gint sfd;                    /**< Server (manager) unix domain file descriptor */
   gboolean connected;          /**< Server connection state */
   struct sockaddr_un saddr;    /**< Server socket addr struct */
   RmgOptions *opts;            /**< Reference to options object */
-} RmnManager;
+} RmgManager;
 
 /**
- * @brief Create a new RmnManager object
+ * @brief Create a new RmgManager object
  * @param opts Pointer to global options object
- * @return A new RmnManager objects
+ * @return A new RmgManager objects
  */
-RmnManager *rmn_manager_new (RmgOptions *opts);
+RmgManager *rmg_manager_new (RmgOptions *opts);
 
 /**
- * @brief Aquire RmnManager object
+ * @brief Aquire RmgManager object
  * @param c Manager object
  */
-RmnManager *rmn_manager_ref (RmnManager *c);
+RmgManager *rmg_manager_ref (RmgManager *c);
 
 /**
- * @brief Release RmnManager object
+ * @brief Release RmgManager object
  * @param c Manager object
  */
-void rmn_manager_unref (RmnManager *c);
+void rmg_manager_unref (RmgManager *c);
 
 /**
  * @brief Connect to rmg manager
  * @param c Manager object
  * @return RMG_STATUS_OK on success
  */
-RmgStatus rmn_manager_connect (RmnManager *c);
+RmgStatus rmg_manager_connect (RmgManager *c);
 
 /**
  * @brief Disconnect from rmg manager
  * @param c Manager object
  * @return RMG_STATUS_OK on success
  */
-RmgStatus rmn_manager_disconnect (RmnManager *c);
+RmgStatus rmg_manager_disconnect (RmgManager *c);
 
 /**
  * @brief Get connection state
  * @param c Manager object
  * @return True if connected
  */
-gboolean rmn_manager_connected (RmnManager *c);
+gboolean rmg_manager_connected (RmgManager *c);
 
 /**
  * @brief Send message to rmg manager
@@ -107,6 +107,6 @@ gboolean rmn_manager_connected (RmnManager *c);
  *
  * @return True if connected
  */
-RmgStatus rmn_manager_send (RmnManager *c, RmgMessage *m);
+RmgStatus rmg_manager_send (RmgManager *c, RmgMessage *m);
 
 G_END_DECLS

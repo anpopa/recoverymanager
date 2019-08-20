@@ -27,7 +27,7 @@
  * authorization.
  */
 
-#include "rmh-application.h"
+#include "rmg-application.h"
 #include "rmg-utils.h"
 
 #include <glib.h>
@@ -53,7 +53,7 @@ main (gint argc, gchar *argv[])
 {
   g_autoptr (GOptionContext) context = NULL;
   g_autoptr (GError) error = NULL;
-  g_autoptr (RmhApplication) app = NULL;
+  g_autoptr (RmgApplication) app = NULL;
   g_autofree gchar *config_path = NULL;
   gboolean version = FALSE;
   RmgStatus status = RMG_STATUS_OK;
@@ -91,7 +91,7 @@ main (gint argc, gchar *argv[])
 
   if (g_access (config_path, R_OK) == 0)
     {
-      app = rmh_application_new (config_path, &error);
+      app = rmg_application_new (config_path, &error);
 
       if (error != NULL)
         {
@@ -101,8 +101,8 @@ main (gint argc, gchar *argv[])
       else
         {
           g_info ("Rmgrhost service started for OS version '%s'", rmg_utils_get_osversion ());
-          g_mainloop = rmh_application_get_mainloop (app);
-          status = rmh_application_execute (app);
+          g_mainloop = rmg_application_get_mainloop (app);
+          status = rmg_application_execute (app);
         }
     }
   else
