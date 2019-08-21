@@ -55,12 +55,14 @@ main (gint argc, gchar *argv[])
   g_autoptr (GError) error = NULL;
   g_autoptr (RmgApplication) app = NULL;
   g_autofree gchar *config_path = NULL;
+  g_autofree gchar *logid = NULL;
   gboolean version = FALSE;
   RmgStatus status = RMG_STATUS_OK;
 
   GOptionEntry main_entries[] = {
     { "version", 'v', 0, G_OPTION_ARG_NONE, &version, "Show program version", "" },
     { "config", 'c', 0, G_OPTION_ARG_FILENAME, &config_path, "Override configuration file", "" },
+    { "logid", 'i', 0, G_OPTION_ARG_STRING, &logid, "Use string as log id (default to RMGR)", "" },
     { NULL }
   };
 
@@ -84,7 +86,10 @@ main (gint argc, gchar *argv[])
       return EXIT_SUCCESS;
     }
 
-  rmg_logging_open ("RMG", "Recoverymanager service", "RMG", "Default context");
+  if (logid == NULL)
+    logid = g_strdup ("RMGR");
+
+  rmg_logging_open (logid, "Recoverymanager service", "RMG", "Default context");
 
   if (config_path == NULL)
     config_path = g_build_filename (RMG_CONFIG_DIRECTORY, RMG_CONFIG_FILE_NAME, NULL);

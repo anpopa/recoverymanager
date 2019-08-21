@@ -38,7 +38,7 @@ G_BEGIN_DECLS
 #define RMG_BUILDTIME_VERSION "@version@"
 #define RMG_MESSAGE_START_HASH (0xECDE)
 
-#define RMG_MESSAGE_ACTION_NAME_LEN (64)
+#define RMG_DATA_NAME_LEN (64)
 #define RMG_VERSION_STRING_LEN (8)
 
 #ifndef RMG_MESSAGE_PACKED
@@ -48,19 +48,26 @@ G_BEGIN_DECLS
 typedef enum _RmgMessageType {
   RMG_REQUEST_ACTION,
   RMG_ACTION_RESPONSE,
+  RMG_INSTANCE_STATUS
 } RmgMessageType;
 
 typedef struct _RmgMessageRequestAction {
-  char action_name[RMG_MESSAGE_ACTION_NAME_LEN];
+  char action_name[RMG_DATA_NAME_LEN];
+  char service_name[RMG_DATA_NAME_LEN];
 } RmgMessageRequestAction;
 
 typedef struct _RmgMessageActionResponse {
   uint64_t value;
 } RmgMessageActionResponse;
 
+typedef struct _RmgMessageInstanceStatus {
+  uint64_t value;
+} RmgMessageInstanceStatus;
+
 typedef union _RmgMessageData {
   RmgMessageRequestAction request;
   RmgMessageActionResponse value;
+  RmgMessageInstanceStatus status;
 } RmgMessageData;
 
 typedef struct _RmgMessageHdr {

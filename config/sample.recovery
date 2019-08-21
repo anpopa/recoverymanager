@@ -3,6 +3,8 @@
   <service>Sample</service>
   <description>Sample service recovery unit</description>
   <relaxtime>300</relaxtime>
+  <privatedata>/var/lib/sample/private</privatedata>
+  <publicdata>/var/lib/sample/public</publicdata>
   <action>
     <action type="resetService" retry="3">Reset Service</action>
     <action type="resetPublicData">Reset Public Data</action>
