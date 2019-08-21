@@ -44,6 +44,19 @@
 #define TMP_BUFFER_SIZE (1024)
 #define UNKNOWN_OS_VERSION "Unknown version"
 
+/* Preserve the size and order from RmgActionType */
+const gchar **g_action_name = {
+  "invalid",
+  "resetService",
+  "resetPublicData",
+  "resetPrivateData",
+  "disableService",
+  "contextReset",
+  "platformReset",
+  "factoryReset",
+  "guruMeditation"
+};
+
 static gchar *os_version = NULL;
 
 gchar *

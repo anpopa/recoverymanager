@@ -47,7 +47,7 @@ typedef struct _RmgServer {
   gpointer tag;     /**< Unix server socket tag  */
   gint sockfd;      /**< Module file descriptor (server listen fd) */
   RmgOptions *options; /**< Own reference to global options */
-  RmgJournal *journal; /**< Own a reference to journal object */
+  gpointer *dispatcher; /**< A pointer to dispatcher. Not owned and optional */
 } RmgServer;
 
 /*
@@ -62,7 +62,7 @@ typedef struct _RmgServer {
  *
  * @return On success return a new RmgServer object otherwise return NULL
  */
-RmgServer *rmg_server_new (RmgOptions *options, RmgTransfer *transfer, RmgJournal *journal, GError **error);
+RmgServer *rmg_server_new (RmgOptions *options, gpointer dispatcher, GError **error);
 
 /**
  * @brief Aquire server object

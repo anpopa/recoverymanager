@@ -35,7 +35,9 @@
 #include "rmg-options.h"
 #include "rmg-journal.h"
 #include "rmg-sdnotify.h"
-#include "rmg-server.h"
+#include "rmg-monitor.h"
+#include "rmg-dispatcher.h"
+#include "rmg-executor.h"
 
 #include <glib.h>
 #include <stdlib.h>
@@ -48,9 +50,11 @@ G_BEGIN_DECLS
  */
 typedef struct _RmgApplication {
   RmgOptions *options;
-  RmgServer *server;
   RmgJournal *journal;
   RmgSDNotify *sdnotify;
+  RmgMonitor *monitor;
+  RmgDispatcher *dispatcher;
+  RmgExecutor *executor;
   GMainLoop *mainloop;
   grefcount rc;           /**< Reference counter variable  */
 } RmgApplication;

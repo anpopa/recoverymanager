@@ -48,9 +48,30 @@ typedef enum _RmgStatus {
 } RmgStatus;
 
 typedef enum _RmgRunMode {
-    RUN_MODE_MASTER, 
-    RUN_MODE_SLAVE
+  RUN_MODE_MASTER,
+  RUN_MODE_SLAVE
 } RmgRunMode;
 
+/**
+ * @enum Action type
+ * @brief The type of action top perform sorted from low to high destructive
+ *   Actions with an ID higher or equal ACTION_CONTEXT_RESET will be performed
+ *   by master instance only.
+ */
+typedef enum _RmgActionType {
+  ACTION_INVALID,
+  ACTION_SERVICE_RESET,
+  ACTION_PUBLIC_DATA_RESET,
+  ACTION_PRIVATE_DATA_RESET,
+  ACTION_SERVICE_DISABLE,
+  ACTION_CONTEXT_RESET,
+  ACTION_PLATFORM_RESET,
+  ACTION_FACTORY_RESET,
+  ACTION_GURU_MEDITATION
+} RmgActionType;
+
+/* Preserve the size and order from RmgActionType */
+extern const gchar **g_action_name;
+extern const RmgRunMode g_run_mode;
 
 G_END_DECLS

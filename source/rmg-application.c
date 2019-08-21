@@ -40,11 +40,34 @@
 #include <unistd.h>
 #include <errno.h>
 
+static RmgRunMode
+get_run_mode (RmgOptions *options)
+{
+  g_autofree gchar *opt_runmode = NULL;
+  g_autofree gchar *opt_sockaddr = NULL;
+
+  g_assert (options);
+
+  opt_runmode = rmg_options_string_for (options, KEY_RUN_MODE);
+
+  if (g_strcmp0 (opt_runmode, "master") == 0)
+    return RUN_MODE_MASTER;
+  else if (g_strcmp0 (opt_runmode, "slave") == 0)
+    return RUN_MODE_SLAVE;
+
+  /* auto is set so try auto detect */
+  opt_sockaddr = rmg_options_string_for (options, KEY_IPC_SOCK_ADDR);
+
+  if (g_access (opt_sockaddr, R_OK) == 0)
+    return RUN_MODE_SLAVE;
+
+  return RUN_MODE_MASTER;
+}
+
 RmgApplication *
 rmg_application_new (const gchar *config, GError **error)
 {
   RmgApplication *app = g_new0 (RmgApplication, 1);
-  g_autofree gchar *opt_dbdir = NULL;
 
   g_assert (app);
   g_assert (error);
@@ -54,26 +77,30 @@ rmg_application_new (const gchar *config, GError **error)
   /* construct sdnotify noexept */
   app->sdnotify = rmg_sdnotify_new ();
 
+  /* construct executor */
+  app->executor = rmg_executor_new ();
+
   /* construct options noexept */
   app->options = rmg_options_new (config);
-
-  opt_dbdir = rmg_options_string_for (app->options, KEY_DATABASE_DIR);
-  if (g_mkdir_with_parents (opt_dbdir, 0755) != 0)
-    {
-      g_set_error (error,
-                   g_quark_from_static_string ("ApplicationNew"),
-                   1,
-                   "Cannot create database directory");
-      return app;
-    }
 
   /* construct journal and return if an error is set */
   app->journal = rmg_journal_new (app->options, error);
   if (*error != NULL)
     return app;
 
-  /* construct server and return if an error is set */
-  app->server = rmg_server_new (app->options, app->journal, error);
+  /* set global run mode flag */
+  g_run_mode = get_run_mode (app->options);
+
+  /* construct dispatcher and return if an error is set */
+  app->dispatcher = rmg_dispatcher_new (app->options,
+                                        app->journal,
+                                        app->executor,
+                                        error);
+  if (*error != NULL)
+    return app;
+
+  /* construct dispatcher and return if an error is set */
+  app->monitor = rmg_monitor_new (app->dispatcher, error);
   if (*error != NULL)
     return app;
 
@@ -109,6 +136,12 @@ rmg_application_unref (RmgApplication *app)
 
       if (app->options != NULL)
         rmg_options_unref (app->options);
+
+      if (app->dispatcher != NULL)
+        rmg_dispatcher_unref (app->dispatcher);
+
+      if (app->monitor != NULL)
+        rmg_monitor_unref (app->monitor);
 
       if (app->mainloop != NULL)
         g_main_loop_unref (app->mainloop);

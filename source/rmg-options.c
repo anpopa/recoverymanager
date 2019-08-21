@@ -122,7 +122,7 @@ rmg_options_string_for (RmgOptions *opts,
             return tmp;
         }
       return g_strdup (RMG_DATABASE_DIR);
-    
+
     case KEY_UNITS_DIR:
       if (opts->has_conf)
         {

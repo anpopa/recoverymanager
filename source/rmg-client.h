@@ -48,7 +48,7 @@ typedef struct _RmgClient {
   gint sockfd;      /**< Module file descriptor (client fd) */
   guint64 id;       /**< Client instance id */
 
-  RmgJournal *journal; /**< Own a reference to the journal object */
+  gpointer dispatcher; /**< Optional reference to dispatcher */
 } RmgClient;
 
 /*
@@ -58,7 +58,7 @@ typedef struct _RmgClient {
  * application
  * @return On success return a new RmgClient object otherwise return NULL
  */
-RmgClient *rmg_client_new (gint clientfd, RmgJournal *journal);
+RmgClient *rmg_client_new (gint clientfd, gpointer dispatcher);
 
 /**
  * @brief Aquire client object

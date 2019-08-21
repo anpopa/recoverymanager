@@ -142,7 +142,7 @@ server_source_destroy_notify (gpointer rmgserver)
 
 RmhServer *
 rmh_server_new (RmgOptions *options,
-                RmgJournal *journal,
+                gpointer dispatcher,
                 GError **error)
 {
   RmhServer *server = NULL;
@@ -159,7 +159,7 @@ rmh_server_new (RmgOptions *options,
   g_ref_count_init (&server->rc);
 
   server->options = rmg_options_ref (options);
-  server->journal = rmg_journal_ref (journal);
+  server->dispatcher = dispatcher;
 
   server->sockfd = socket (AF_UNIX, SOCK_STREAM, 0);
   if (server->sockfd < 0)
@@ -204,7 +204,6 @@ rmh_server_unref (RmhServer *server)
   if (g_ref_count_dec (&server->rc) == TRUE)
     {
       rmg_options_unref (server->options);
-      rmg_journal_unref (server->journal);
       g_source_unref (RMG_EVENT_SOURCE (server));
     }
 }

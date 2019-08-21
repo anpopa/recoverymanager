@@ -170,7 +170,7 @@ process_message (RmgClient *c,
 
 RmgClient *
 rmg_client_new (gint clientfd,
-                RmgJournal *journal)
+                gpointer dispatcher)
 {
   RmgClient *client = (RmgClient *)g_source_new (&client_source_funcs, sizeof(RmgClient));
 
@@ -179,7 +179,7 @@ rmg_client_new (gint clientfd,
   g_ref_count_init (&client->rc);
 
   client->sockfd = clientfd;
-  client->journal = rmg_journal_ref (journal);
+  client->dispatcher = dispatcher;
 
   g_source_set_callback (RMG_EVENT_SOURCE (client),
                          G_SOURCE_FUNC (client_source_callback),
@@ -209,7 +209,6 @@ rmg_client_unref (RmgClient *client)
 
   if (g_ref_count_dec (&client->rc) == TRUE)
     {
-      rmg_journal_unref (client->journal);
       g_source_unref (RMG_EVENT_SOURCE (client));
     }
 }

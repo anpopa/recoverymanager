@@ -34,15 +34,15 @@
  * @enum Journal query type
  */
 typedef enum _JournalQueryType {
-    QUERY_CREATE,
+  QUERY_CREATE,
 } JournalQueryType;
 
 /**
  * @enum Journal query data object
  */
 typedef struct _JournalQueryData {
-    JournalQueryType type;
-    gpointer response;
+  JournalQueryType type;
+  gpointer response;
 } JournalQueryData;
 
 const gchar *rmg_table_services = "Services";
@@ -78,8 +78,8 @@ rmg_journal_new (RmgOptions *options, GError **error)
   g_autofree gchar *dbfile = NULL;
   gchar *query_error = NULL;
   JournalQueryData data = {
-      .type = QUERY_CREATE,
-      .response = NULL
+    .type = QUERY_CREATE,
+    .response = NULL
   };
 
   journal = g_new0 (RmgJournal, 1);
@@ -126,7 +126,8 @@ rmg_journal_new (RmgOptions *options, GError **error)
                                          "(ID INT PRIMARY KEY    NOT   NULL, "
                                          "SERVICE         INT    NOT   NULL, "
                                          "TYPE            INT    NOT   NULL, "
-                                         "NEXTACTION      INT    NOT   NULL);",
+                                         "LEVEL           INT    NOT   NULL, "
+                                         "NEXT            INT    NOT   NULL);",
                                          rmg_table_actions);
 
           if (sqlite3_exec (journal->database, actions_sql, sqlite_callback, &data, &query_error)
