@@ -100,6 +100,7 @@ recoverymanagerhost_sources = [
   'source/rmg-manager.c',
   'source/rmg-monitor.c',
   'source/rmg-executor.c',
+  'source/rmg-sentry.c',
   'source/rmg-application.c',
   ]
 

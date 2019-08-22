@@ -28,6 +28,7 @@
  */
 
 #include "rmg-journal.h"
+#include "rmg-sentry.h"
 #include "rmg-defaults.h"
 #include "rmg-utils.h"
 
@@ -92,6 +93,7 @@ rmg_journal_new (RmgOptions *options, GError **error)
   g_assert (journal);
 
   g_ref_count_init (&journal->rc);
+  journal->options = rmg_options_ref (options);
 
   opt_dbdir = rmg_options_string_for (options, KEY_DATABASE_DIR);
   dbfile = g_build_filename (opt_dbdir, RMG_DATABASE_FILE_NAME, NULL);
@@ -109,6 +111,8 @@ rmg_journal_new (RmgOptions *options, GError **error)
                                       "(ID INT PRIMARY KEY    NOT   NULL, "
                                       "NAME            TEXT   NOT   NULL, "
                                       "VERSION         INT    NOT   NULL, "
+                                      "PRIVDATA        TEXT   NOT   NULL, "
+                                      "PUBLDATA        TEXT   NOT   NULL, "
                                       "GRADIANT        INT    NOT   NULL, "
                                       "RELAXING        BOOL   NOT   NULL, "
                                       "TIMEOUT         INT    NOT   NULL);",
@@ -164,6 +168,45 @@ rmg_journal_unref (RmgJournal *journal)
   g_assert (journal);
 
   if (g_ref_count_dec (&journal->rc) == TRUE)
-    g_free (journal);
+    {
+      if (journal->options)
+        rmg_options_unref (journal->options);
+
+      g_free (journal);
+    }
+}
+
+RmgStatus
+rmg_journal_reload (RmgJournal *journal, GError **error)
+{
+  g_autofree gchar *opt_unitsdir = NULL;
+  const gchar *nfile = NULL;
+  GDir *gdir = NULL;
+
+  g_assert (journal);
+
+  opt_unitsdir = rmg_options_string_for (journal->options, KEY_UNITS_DIR);
+
+  gdir = g_dir_open (opt_unitsdir, 0, error);
+  if (*error != NULL)
+    return RMG_STATUS_ERROR;
+
+  while ((nfile = g_dir_read_name (gdir)) != NULL)
+    {
+      g_autoptr (RmgSEntry) service_entry = NULL;
+      g_autofree gchar *fpath = NULL;
+      g_autofree gchar *fdata = NULL;
+      g_autofree gchar *edata = NULL;
+
+      fpath = g_build_filename (opt_unitsdir, nfile, NULL);
+      if (!g_file_get_contents (fpath, &fdata, NULL, NULL))
+        continue;
+
+      edata = g_markup_escape_text (fdata, -1);
+    }
+
+  g_dir_close (gdir);
+
+  return RMG_STATUS_OK;
 }
 

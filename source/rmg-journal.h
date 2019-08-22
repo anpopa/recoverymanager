@@ -42,6 +42,7 @@ G_BEGIN_DECLS
  * @brief The RmgJournal opaque data structure
  */
 typedef struct _RmgJournal {
+  RmgOptions *options;
   sqlite3 *database; /**< The sqlite3 database object */
   grefcount rc;     /**< Reference counter variable  */
 } RmgJournal;
@@ -67,6 +68,14 @@ RmgJournal *rmg_journal_ref (RmgJournal *journal);
  * @param journal Pointer to the journal object
  */
 void rmg_journal_unref (RmgJournal *journal);
+
+/**
+ * @brief Reload units from filesystem
+ * @param journal Pointer to the journal object
+ * @param error The GError object or NULL
+ * @return On success return RMG_STATUS_OK
+ */
+RmgStatus rmg_journal_reload (RmgJournal *journal, GError **error);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgJournal, rmg_journal_unref);
 
