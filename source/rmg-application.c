@@ -92,6 +92,10 @@ rmg_application_new (const gchar *config, GError **error)
 
   /* set global run mode flag */
   g_run_mode = get_run_mode (app->options);
+  if (g_run_mode == RUN_MODE_MASTER)
+    g_info ("Recovery manager running as master");
+  else
+    g_info ("Recovery manager running as slave");
 
   /* construct dispatcher and return if an error is set */
   app->dispatcher = rmg_dispatcher_new (app->options,

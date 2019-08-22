@@ -248,6 +248,14 @@ rmg_dispatcher_unref (RmgDispatcher *dispatcher)
 
   if (g_ref_count_dec (&dispatcher->rc) == TRUE)
     {
+      g_autofree gchar *sock_addr = NULL;
+
+      if (g_run_mode == RUN_MODE_MASTER)
+        {
+          sock_addr = rmg_options_string_for (dispatcher->options, KEY_IPC_SOCK_ADDR);
+          unlink (sock_addr);
+        }
+
       if (dispatcher->options != NULL)
         rmg_options_unref (dispatcher->options);
 
