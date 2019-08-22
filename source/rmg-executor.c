@@ -100,7 +100,7 @@ executor_source_prepare (GSource *source,
 {
   RmgExecutor *executor = (RmgExecutor *)source;
 
-  CDM_UNUSED (timeout);
+  RMG_UNUSED (timeout);
 
   return(g_async_queue_length (executor->queue) > 0);
 }
@@ -113,8 +113,8 @@ executor_source_dispatch (GSource *source,
   RmgExecutor *executor = (RmgExecutor *)source;
   gpointer event = g_async_queue_try_pop (executor->queue);
 
-  CDM_UNUSED (callback);
-  CDM_UNUSED (_executor);
+  RMG_UNUSED (callback);
+  RMG_UNUSED (_executor);
 
   if (event == NULL)
     return G_SOURCE_CONTINUE;
@@ -155,7 +155,7 @@ executor_source_destroy_notify (gpointer _executor)
 static void
 executor_queue_destroy_notify (gpointer _executor)
 {
-  CDM_UNUSED (_executor);
+  RMG_UNUSED (_executor);
   g_debug ("Executor queue destroy notification");
 }
 
@@ -170,11 +170,11 @@ rmg_executor_new (void)
 
   executor->queue = g_async_queue_new_full (executor_queue_destroy_notify);
 
-  g_source_set_callback (CDM_EVENT_SOURCE (executor),
+  g_source_set_callback (RMG_EVENT_SOURCE (executor),
                          NULL,
                          executor,
                          executor_source_destroy_notify);
-  g_source_attach (CDM_EVENT_SOURCE (executor), NULL);
+  g_source_attach (RMG_EVENT_SOURCE (executor), NULL);
 
   return executor;
 }
@@ -195,7 +195,7 @@ rmg_executor_unref (RmgExecutor *executor)
   if (g_ref_count_dec (&executor->rc) == TRUE)
     {
       g_async_queue_unref (executor->queue);
-      g_source_unref (CDM_EVENT_SOURCE (executor));
+      g_source_unref (RMG_EVENT_SOURCE (executor));
     }
 }
 

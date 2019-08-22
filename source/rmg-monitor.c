@@ -100,7 +100,7 @@ monitor_source_prepare (GSource *source,
 {
   RmgMonitor *monitor = (RmgMonitor *)source;
 
-  CDM_UNUSED (timeout);
+  RMG_UNUSED (timeout);
 
   return(g_async_queue_length (monitor->queue) > 0);
 }
@@ -113,8 +113,8 @@ monitor_source_dispatch (GSource *source,
   RmgMonitor *monitor = (RmgMonitor *)source;
   gpointer event = g_async_queue_try_pop (monitor->queue);
 
-  CDM_UNUSED (callback);
-  CDM_UNUSED (_monitor);
+  RMG_UNUSED (callback);
+  RMG_UNUSED (_monitor);
 
   if (event == NULL)
     return G_SOURCE_CONTINUE;
@@ -155,7 +155,7 @@ monitor_source_destroy_notify (gpointer _monitor)
 static void
 monitor_queue_destroy_notify (gpointer _monitor)
 {
-  CDM_UNUSED (_monitor);
+  RMG_UNUSED (_monitor);
   g_debug ("Monitor queue destroy notification");
 }
 
@@ -176,11 +176,11 @@ rmg_monitor_new (RmgDispatcher *dispatcher, GError **error)
   monitor->dispatcher = rmg_dispatcher_ref (dispatcher);
   monitor->queue = g_async_queue_new_full (monitor_queue_destroy_notify);
 
-  g_source_set_callback (CDM_EVENT_SOURCE (monitor),
+  g_source_set_callback (RMG_EVENT_SOURCE (monitor),
                          NULL,
                          monitor,
                          monitor_source_destroy_notify);
-  g_source_attach (CDM_EVENT_SOURCE (monitor), NULL);
+  g_source_attach (RMG_EVENT_SOURCE (monitor), NULL);
 
   return monitor;
 }
@@ -204,7 +204,7 @@ rmg_monitor_unref (RmgMonitor *monitor)
         rmg_dispatcher_unref (monitor->dispatcher);
 
       g_async_queue_unref (monitor->queue);
-      g_source_unref (CDM_EVENT_SOURCE (monitor));
+      g_source_unref (RMG_EVENT_SOURCE (monitor));
     }
 }
 

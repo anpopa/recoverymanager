@@ -100,7 +100,7 @@ dispatcher_source_prepare (GSource *source,
 {
   RmgDispatcher *dispatcher = (RmgDispatcher *)source;
 
-  CDM_UNUSED (timeout);
+  RMG_UNUSED (timeout);
 
   return(g_async_queue_length (dispatcher->queue) > 0);
 }
@@ -113,8 +113,8 @@ dispatcher_source_dispatch (GSource *source,
   RmgDispatcher *dispatcher = (RmgDispatcher *)source;
   gpointer event = g_async_queue_try_pop (dispatcher->queue);
 
-  CDM_UNUSED (callback);
-  CDM_UNUSED (_dispatcher);
+  RMG_UNUSED (callback);
+  RMG_UNUSED (_dispatcher);
 
   if (event == NULL)
     return G_SOURCE_CONTINUE;
@@ -155,7 +155,7 @@ dispatcher_source_destroy_notify (gpointer _dispatcher)
 static void
 dispatcher_queue_destroy_notify (gpointer _dispatcher)
 {
-  CDM_UNUSED (_dispatcher);
+  RMG_UNUSED (_dispatcher);
   g_debug ("Dispatcher queue destroy notification");
 }
 
@@ -164,7 +164,7 @@ run_mode_specific_init (RmgDispatcher *dispatcher, GError **error)
 {
   RmgStatus status = RMG_STATUS_OK;
 
-  g_assert (journal);
+  g_assert (dispatcher);
 
   if (g_run_mode == RUN_MODE_MASTER)
     {
@@ -208,7 +208,7 @@ RmgDispatcher *
 rmg_dispatcher_new (RmgOptions *options,
                     RmgJournal *journal,
                     RmgExecutor *executor,
-                    GError **error);
+                    GError **error)
 {
   RmgDispatcher *dispatcher = (RmgDispatcher *)g_source_new (&dispatcher_source_funcs, sizeof(RmgDispatcher));
 
@@ -223,11 +223,11 @@ rmg_dispatcher_new (RmgOptions *options,
 
   if (run_mode_specific_init (dispatcher, error) == RMG_STATUS_OK)
     {
-      g_source_set_callback (CDM_EVENT_SOURCE (dispatcher),
+      g_source_set_callback (RMG_EVENT_SOURCE (dispatcher),
                              NULL,
                              dispatcher,
                              dispatcher_source_destroy_notify);
-      g_source_attach (CDM_EVENT_SOURCE (dispatcher), NULL);
+      g_source_attach (RMG_EVENT_SOURCE (dispatcher), NULL);
     }
 
   return dispatcher;
@@ -264,6 +264,6 @@ rmg_dispatcher_unref (RmgDispatcher *dispatcher)
         rmg_manager_unref (dispatcher->manager);
 
       g_async_queue_unref (dispatcher->queue);
-      g_source_unref (CDM_EVENT_SOURCE (dispatcher));
+      g_source_unref (RMG_EVENT_SOURCE (dispatcher));
     }
 }

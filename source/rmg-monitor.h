@@ -40,7 +40,7 @@ G_BEGIN_DECLS
  * @enum monitor_event_data
  * @brief Monitor event data type
  */
-typedef union _MonitorEventType {
+typedef enum _MonitorEventType {
   MONITOR_EVENT_SERVICE_UPDATE,
   MONITOR_EVENT_SERVICE_RELAXED
 } MonitorEventType;
@@ -57,7 +57,7 @@ typedef gboolean (*RmgMonitorCallback) (gpointer _monitor, gpointer _event);
  */
 typedef struct _RmgMonitorEvent {
   MonitorEventType type;     /**< The event type the element holds */
-  gchar service_name;     /**< Service name for the event */
+  gchar *service_name;     /**< Service name for the event */
 } RmgMonitorEvent;
 
 /**
@@ -67,6 +67,7 @@ typedef struct _RmgMonitorEvent {
 typedef struct _RmgMonitor {
   GSource source;  /**< Event loop source */
   GAsyncQueue    *queue;  /**< Async queue */
+  RmgMonitorCallback callback; /**< Callback function */
   RmgDispatcher *dispatcher;
   grefcount rc;     /**< Reference counter variable  */
 } RmgMonitor;

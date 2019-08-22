@@ -40,6 +40,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+RmgRunMode g_run_mode;
+
 static RmgRunMode
 get_run_mode (RmgOptions *options)
 {
@@ -125,9 +127,6 @@ rmg_application_unref (RmgApplication *app)
 
   if (g_ref_count_dec (&app->rc) == TRUE)
     {
-      if (app->server != NULL)
-        rmg_server_unref (app->server);
-
       if (app->journal != NULL)
         rmg_journal_unref (app->journal);
 

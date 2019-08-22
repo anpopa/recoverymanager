@@ -39,7 +39,7 @@ G_BEGIN_DECLS
  * @enum executor_event_data
  * @brief Executor event data type
  */
-typedef union _ExecutorEventType {
+typedef enum _ExecutorEventType {
   EXECUTOR_EVENT_SERVICE_UPDATE,
   EXECUTOR_EVENT_SERVICE_RELAXED
 } ExecutorEventType;
@@ -56,7 +56,7 @@ typedef gboolean (*RmgExecutorCallback) (gpointer _executor, gpointer _event);
  */
 typedef struct _RmgExecutorEvent {
   ExecutorEventType type;     /**< The event type the element holds */
-  gchar service_name;     /**< Service name for the event */
+  gchar *service_name;     /**< Service name for the event */
 } RmgExecutorEvent;
 /**
  * @struct RmgExecutor
@@ -65,6 +65,7 @@ typedef struct _RmgExecutorEvent {
 typedef struct _RmgExecutor {
   GSource source;  /**< Event loop source */
   GAsyncQueue    *queue;  /**< Async queue */
+  RmgExecutorCallback callback; /**< Callback function */
   grefcount rc;     /**< Reference counter variable  */
 } RmgExecutor;
 

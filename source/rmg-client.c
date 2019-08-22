@@ -114,7 +114,7 @@ client_source_callback (gpointer data)
 
   g_assert (client);
 
-  rmg_message_init (&msg, RMG_CORE_UNKNOWN, 0);
+  rmg_message_init (&msg, RMG_MESSAGE_UNKNOWN, 0);
 
   if (rmg_message_read (client->sockfd, &msg) != RMG_STATUS_OK)
     {
@@ -128,6 +128,7 @@ client_source_callback (gpointer data)
       process_message (client, &msg);
 
       /* TODO: More actions based on msg type */
+      RMG_UNUSED (type);
     }
 
   return status;

@@ -28,6 +28,7 @@
  */
 
 #include "rmg-journal.h"
+#include "rmg-defaults.h"
 #include "rmg-utils.h"
 
 /**
@@ -57,6 +58,10 @@ static int
 sqlite_callback (void *data, int argc, char **argv, char **colname)
 {
   JournalQueryData *querydata = (JournalQueryData *)data;
+
+  RMG_UNUSED (argc);
+  RMG_UNUSED (argv);
+  RMG_UNUSED (colname);
 
   switch (querydata->type)
     {
@@ -89,7 +94,7 @@ rmg_journal_new (RmgOptions *options, GError **error)
   g_ref_count_init (&journal->rc);
 
   opt_dbdir = rmg_options_string_for (options, KEY_DATABASE_DIR);
-  dbfile = g_build_filename (opt_dbdir, MG_DATABASE_FILE_NAME, NULL);
+  dbfile = g_build_filename (opt_dbdir, RMG_DATABASE_FILE_NAME, NULL);
 
   if (sqlite3_open (dbfile, &journal->database))
     {
@@ -98,7 +103,7 @@ rmg_journal_new (RmgOptions *options, GError **error)
     }
   else
     {
-      g_autofree gchar *create_services_sql = NULL;
+      g_autofree gchar *services_sql = NULL;
 
       services_sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s      "
                                       "(ID INT PRIMARY KEY    NOT   NULL, "

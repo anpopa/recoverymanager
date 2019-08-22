@@ -1,8 +1,4 @@
 option('CONFDIR', type : 'string', value : '/etc', description : 'System configuration directory')
-option('RMGRHOST', type : 'boolean', value : true, description : 'Build recovery manager host
-	service')
-option('RMGRNODE', type : 'boolean', value : true, description : 'Build recovery manager node
-	service
 option('LXC', type : 'boolean', value : false, description : 'Build LXC support for container mapping')
 option('GENIVI_DLT', type : 'boolean', value : false, description : 'Use GENIVI infrustructure for logging')
 option('TESTS', type : 'boolean', value : false, description : 'Build unit tests')

@@ -45,7 +45,7 @@
 #define UNKNOWN_OS_VERSION "Unknown version"
 
 /* Preserve the size and order from RmgActionType */
-const gchar **g_action_name = {
+const gchar *g_action_name[] = {
   "invalid",
   "resetService",
   "resetPublicData",

@@ -1,4 +1,4 @@
-/* rmh-server.c
+/* rmg-server.c
  *
  * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
  *
@@ -27,8 +27,8 @@
  * authorization.
  */
 
-#include "rmh-server.h"
-#include "rmh-client.h"
+#include "rmg-server.h"
+#include "rmg-client.h"
 
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -109,7 +109,7 @@ server_source_dispatch (GSource *source, GSourceFunc callback, gpointer rmgserve
 static gboolean
 server_source_callback (gpointer rmgserver)
 {
-  RmhServer *server = (RmhServer *)rmgserver;
+  RmgServer *server = (RmgServer *)rmgserver;
   gint clientfd;
 
   g_assert (server);
@@ -118,7 +118,7 @@ server_source_callback (gpointer rmgserver)
 
   if (clientfd >= 0)
     {
-      RmhClient *client = rmh_client_new (clientfd, server->journal);
+      RmgClient *client = rmg_client_new (clientfd, server->dispatcher);
 
       RMG_UNUSED (client);
 
@@ -140,20 +140,18 @@ server_source_destroy_notify (gpointer rmgserver)
   g_info ("Server terminated");
 }
 
-RmhServer *
-rmh_server_new (RmgOptions *options,
+RmgServer *
+rmg_server_new (RmgOptions *options,
                 gpointer dispatcher,
                 GError **error)
 {
-  RmhServer *server = NULL;
+  RmgServer *server = NULL;
   struct timeval tout;
   glong timeout;
 
   g_assert (options);
-  g_assert (transfer);
-  g_assert (journal);
 
-  server = (RmhServer *)g_source_new (&server_source_funcs, sizeof(RmhServer));
+  server = (RmgServer *)g_source_new (&server_source_funcs, sizeof(RmgServer));
   g_assert (server);
 
   g_ref_count_init (&server->rc);
@@ -188,8 +186,8 @@ rmh_server_new (RmgOptions *options,
   return server;
 }
 
-RmhServer *
-rmh_server_ref (RmhServer *server)
+RmgServer *
+rmg_server_ref (RmgServer *server)
 {
   g_assert (server);
   g_ref_count_inc (&server->rc);
@@ -197,7 +195,7 @@ rmh_server_ref (RmhServer *server)
 }
 
 void
-rmh_server_unref (RmhServer *server)
+rmg_server_unref (RmgServer *server)
 {
   g_assert (server);
 
@@ -209,25 +207,21 @@ rmh_server_unref (RmhServer *server)
 }
 
 RmgStatus
-rmh_server_bind_and_listen (RmhServer *server)
+rmg_server_bind_and_listen (RmgServer *server)
 {
   g_autofree gchar *sock_addr = NULL;
-  g_autofree gchar *run_dir = NULL;
-  g_autofree gchar *udspath = NULL;
   RmgStatus status = RMG_STATUS_OK;
   struct sockaddr_un saddr;
 
   g_assert (server);
 
-  run_dir = rmg_options_string_for (server->options, KEY_RUN_DIR);
   sock_addr = rmg_options_string_for (server->options, KEY_IPC_SOCK_ADDR);
-  udspath = g_build_filename (run_dir, sock_addr, NULL);
 
-  unlink (udspath);
+  unlink (sock_addr);
 
   memset (&saddr, 0, sizeof(struct sockaddr_un));
   saddr.sun_family = AF_UNIX;
-  strncpy (saddr.sun_path, udspath, sizeof(saddr.sun_path) - 1);
+  strncpy (saddr.sun_path, sock_addr, sizeof(saddr.sun_path) - 1);
 
   g_debug ("Server socket path %s", saddr.sun_path);
 

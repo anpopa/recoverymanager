@@ -71,7 +71,7 @@ typedef enum _RmgActionType {
 } RmgActionType;
 
 /* Preserve the size and order from RmgActionType */
-extern const gchar **g_action_name;
-extern const RmgRunMode g_run_mode;
+extern const gchar *g_action_name[];
+extern RmgRunMode g_run_mode;
 
 G_END_DECLS

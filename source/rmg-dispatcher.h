@@ -44,7 +44,7 @@ G_BEGIN_DECLS
  * @enum dispatcher_event_data
  * @brief Dispatcher event data type
  */
-typedef union _DispatcherEventType {
+typedef enum _DispatcherEventType {
   DISPATCHER_EVENT_SERVICE_UPDATE,
   DISPATCHER_EVENT_SERVICE_RELAXED
 } DispatcherEventType;
@@ -61,7 +61,7 @@ typedef gboolean (*RmgDispatcherCallback) (gpointer _dispatcher, gpointer _event
  */
 typedef struct _RmgDispatcherEvent {
   DispatcherEventType type;     /**< The event type the element holds */
-  gchar service_name;     /**< Service name for the event */
+  gchar *service_name;     /**< Service name for the event */
 } RmgDispatcherEvent;
 /**
  * @struct RmgDispatcher
@@ -70,6 +70,7 @@ typedef struct _RmgDispatcherEvent {
 typedef struct _RmgDispatcher {
   GSource source;  /**< Event loop source */
   GAsyncQueue    *queue;  /**< Async queue */
+  RmgDispatcherCallback callback; /**< Dispatcher callback function */
   RmgOptions *options;
   RmgJournal *journal;
   RmgExecutor *executor;

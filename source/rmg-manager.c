@@ -76,7 +76,6 @@ RmgStatus
 rmg_manager_connect (RmgManager *c)
 {
   g_autofree gchar *opt_sock_addr = NULL;
-  g_autofree gchar *opt_run_dir = NULL;
   struct timeval tout;
   glong opt_timeout;
 
@@ -92,15 +91,13 @@ rmg_manager_connect (RmgManager *c)
       return RMG_STATUS_ERROR;
     }
 
-  opt_run_dir = rmg_options_string_for (c->opts, KEY_RUN_DIR);
   opt_sock_addr = rmg_options_string_for (c->opts, KEY_IPC_SOCK_ADDR);
   opt_timeout = rmg_options_long_for (c->opts, KEY_IPC_TIMEOUT_SEC);
 
   memset (&c->saddr, 0, sizeof(struct sockaddr_un));
   c->saddr.sun_family = AF_UNIX;
 
-  snprintf (c->saddr.sun_path, (sizeof(c->saddr.sun_path) - 1), "%s/%s", opt_run_dir,
-            opt_sock_addr);
+  snprintf (c->saddr.sun_path, (sizeof(c->saddr.sun_path) - 1), "%s", opt_sock_addr);
 
   if (connect (c->sfd, (struct sockaddr *)&c->saddr, sizeof(struct sockaddr_un)) < 0)
     {
