@@ -90,6 +90,8 @@ rmg_application_new (const gchar *config, GError **error)
   if (*error != NULL)
     return app;
 
+  rmg_journal_reload_units (app->journal, NULL);
+
   /* set global run mode flag */
   g_run_mode = get_run_mode (app->options);
   if (g_run_mode == RUN_MODE_MASTER)

@@ -67,7 +67,7 @@ typedef enum _RmgActionType {
   ACTION_CONTEXT_RESET,
   ACTION_PLATFORM_RESET,
   ACTION_FACTORY_RESET,
-  ACTION_GURU_MEDITATION
+  ACTION_GURU_MEDITATION /* must be the last entry */
 } RmgActionType;
 
 /* Preserve the size and order from RmgActionType */

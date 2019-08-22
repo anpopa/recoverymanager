@@ -42,7 +42,7 @@ G_BEGIN_DECLS
  */
 typedef struct _RmgAEntry {
   gulong id;
-  gint level;
+  glong level;
   RmgActionType type;
   gulong nextid;
 } RmgAEntry;
@@ -54,12 +54,13 @@ typedef struct _RmgAEntry {
 typedef struct _RmgSEntry {
   gulong id;
   gchar *name;
-  glong version;
+  gulong version;
   gchar *private_data;
   gchar *public_data;
-  gint gradiant;
+  glong gradiant;
   gboolean relaxing;
-  gulong timeout;
+  glong timeout;
+  const gchar *parser_current_element;
   GList *actions;
   grefcount rc;     /**< Reference counter variable  */
 } RmgSEntry;
@@ -71,7 +72,7 @@ typedef struct _RmgSEntry {
  * @brief Create a new sentry object
  * @return On success return a new RmgSEntry object otherwise return NULL
  */
-RmgSEntry *rmg_sentry_new (glong version);
+RmgSEntry *rmg_sentry_new (gulong version);
 
 /**
  * @brief Aquire sentry object
@@ -103,7 +104,7 @@ void rmg_sentry_set_public_data_path (RmgSEntry *sentry, const gchar *dpath);
 /**
  * @brief Setter
  */
-void rmg_sentry_set_gradiant (RmgSEntry *sentry, gint gradiant);
+void rmg_sentry_set_gradiant (RmgSEntry *sentry, glong gradiant);
 
 /**
  * @brief Setter
@@ -113,17 +114,17 @@ void rmg_sentry_set_relaxing (RmgSEntry *sentry, gboolean relaxing);
 /**
  * @brief Setter
  */
-void rmg_sentry_set_timeout (RmgSEntry *sentry, gulong timeout);
+void rmg_sentry_set_timeout (RmgSEntry *sentry, glong timeout);
 
 /**
  * @brief Setter
  */
-void rmg_sentry_add_action (RmgSEntry *sentry, RmgActionType type, gint level);
+void rmg_sentry_add_action (RmgSEntry *sentry, RmgActionType type, glong level);
 
 /**
  * @brief Getter
  */
-glong rmg_sentry_get_version (RmgSEntry *sentry);
+gulong rmg_sentry_get_version (RmgSEntry *sentry);
 
 /**
  * @brief Getter
@@ -143,7 +144,7 @@ const gchar *rmg_sentry_get_public_data_path (RmgSEntry *sentry);
 /**
  * @brief Getter
  */
-gint rmg_sentry_get_gradiant (RmgSEntry *sentry);
+glong rmg_sentry_get_gradiant (RmgSEntry *sentry);
 
 /**
  * @brief Getter
@@ -153,7 +154,7 @@ gboolean rmg_sentry_get_relaxing (RmgSEntry *sentry);
 /**
  * @brief Getter
  */
-gulong rmg_sentry_get_timeout (RmgSEntry *sentry);
+glong rmg_sentry_get_timeout (RmgSEntry *sentry);
 
 /**
  * @brief Getter

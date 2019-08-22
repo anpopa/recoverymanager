@@ -94,4 +94,11 @@ pid_t rmg_utils_first_pid_for_process (const gchar *exepath);
  */
 RmgStatus rmg_utils_chown (const gchar *file_path, const gchar *user_name, const gchar *group_name);
 
+/**
+ * @brief Get action type from string name
+ * @param name Action name
+ * @return The action type
+ */
+RmgActionType rmg_utils_action_type_from (const gchar *name);
+
 G_END_DECLS

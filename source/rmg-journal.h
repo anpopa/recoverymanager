@@ -75,7 +75,7 @@ void rmg_journal_unref (RmgJournal *journal);
  * @param error The GError object or NULL
  * @return On success return RMG_STATUS_OK
  */
-RmgStatus rmg_journal_reload (RmgJournal *journal, GError **error);
+RmgStatus rmg_journal_reload_units (RmgJournal *journal, GError **error);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgJournal, rmg_journal_unref);
 

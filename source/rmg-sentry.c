@@ -36,13 +36,14 @@ action_entry_free (gpointer entry)
 }
 
 RmgSEntry *
-rmg_sentry_new (glong version)
+rmg_sentry_new (gulong version)
 {
   RmgSEntry *sentry = g_new0 (RmgSEntry, 1);
 
   g_ref_count_init (&sentry->rc);
 
   sentry->relaxing = FALSE;
+  sentry->id = version;
   sentry->version = version;
   sentry->actions = NULL;
 
@@ -107,7 +108,7 @@ rmg_sentry_set_public_data_path (RmgSEntry *sentry, const gchar *dpath)
 }
 
 void
-rmg_sentry_set_gradiant (RmgSEntry *sentry, gint gradiant)
+rmg_sentry_set_gradiant (RmgSEntry *sentry, glong gradiant)
 {
   g_assert (sentry);
   sentry->gradiant = gradiant;
@@ -121,27 +122,27 @@ rmg_sentry_set_relaxing (RmgSEntry *sentry, gboolean relaxing)
 }
 
 void
-rmg_sentry_set_timeout (RmgSEntry *sentry, gulong timeout)
+rmg_sentry_set_timeout (RmgSEntry *sentry, glong timeout)
 {
   g_assert (sentry);
   sentry->timeout = timeout;
 }
 
 void
-rmg_sentry_add_action (RmgSEntry *sentry, RmgActionType type, gint level)
+rmg_sentry_add_action (RmgSEntry *sentry, RmgActionType type, glong level)
 {
   RmgAEntry *action = g_new0 (RmgAEntry, 1);
 
   g_assert (sentry);
 
-  /* TODO: Handle IDs */
+  action->id = sentry->id + (gulong)type + (gulong)level;
   action->level = level;
   action->type = type;
 
   sentry->actions = g_list_append (sentry->actions, RMG_AENTRY_TO_PTR (action));
 }
 
-glong
+gulong
 rmg_sentry_get_version (RmgSEntry *sentry)
 {
   g_assert (sentry);
@@ -169,7 +170,7 @@ rmg_sentry_get_public_data_path (RmgSEntry *sentry)
   return sentry->public_data;
 }
 
-gint
+glong
 rmg_sentry_get_gradiant (RmgSEntry *sentry)
 {
   g_assert (sentry);
@@ -183,7 +184,7 @@ rmg_sentry_get_relaxing (RmgSEntry *sentry)
   return sentry->relaxing;
 }
 
-gulong
+glong
 rmg_sentry_get_timeout (RmgSEntry *sentry)
 {
   g_assert (sentry);

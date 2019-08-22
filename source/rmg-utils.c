@@ -51,13 +51,25 @@ const gchar *g_action_name[] = {
   "resetPublicData",
   "resetPrivateData",
   "disableService",
-  "contextReset",
-  "platformReset",
+  "contextRestart",
+  "platformRestart",
   "factoryReset",
   "guruMeditation"
 };
 
 static gchar *os_version = NULL;
+
+RmgActionType
+rmg_utils_action_type_from (const gchar *name)
+{
+  for (gint i = 0; i < ACTION_GURU_MEDITATION; i++)
+    {
+      if (g_strcmp0 (g_action_name[i], name) == 0)
+        return (RmgActionType)i;
+    }
+
+  return ACTION_INVALID;
+}
 
 gchar *
 rmg_utils_get_procname (gint64 pid)
