@@ -74,6 +74,9 @@ rmg_sentry_unref (RmgSEntry *sentry)
       if (sentry->public_data != NULL)
         g_free (sentry->public_data);
 
+      if (sentry->hash_generator != NULL)
+        g_rand_free (sentry->hash_generator);
+
       g_list_free_full (sentry->actions, action_entry_free);
 
       g_free (sentry);
@@ -87,6 +90,9 @@ rmg_sentry_set_name (RmgSEntry *sentry, const gchar *name)
   g_assert (name);
 
   sentry->name = g_strdup (name);
+
+  /* we have the name so we can initialize the hash generator for actions */
+  sentry->hash_generator = g_rand_new_with_seed ((guint32)sentry->hash);
 }
 
 void
@@ -135,11 +141,11 @@ rmg_sentry_add_action (RmgSEntry *sentry,
                        glong trigger_level_max)
 {
   RmgAEntry *action = g_new0 (RmgAEntry, 1);
-  static gulong local_increment = 0;
 
   g_assert (sentry);
 
-  action->hash = sentry->hash + local_increment++;
+  action->hash = (gulong)g_rand_int (sentry->hash_generator);
+
   action->type = type;
   action->trigger_level_min = trigger_level_min;
   action->trigger_level_max = trigger_level_max;

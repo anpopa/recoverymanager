@@ -59,8 +59,10 @@ typedef struct _RmgSEntry {
   glong rvector;
   gboolean relaxing;
   glong timeout;
-  const gchar *parser_current_element;
   GList *actions;
+
+  GRand *hash_generator;
+  const gchar *parser_current_element;
   grefcount rc;     /**< Reference counter variable  */
 } RmgSEntry;
 

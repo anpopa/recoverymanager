@@ -120,7 +120,7 @@ sqlite_callback (void *data, int argc, char **argv, char **colname)
       for (gint i = 0; i < argc; i++)
         {
           if (g_strcmp0 (colname[i], "HASH") == 0)
-            *((gulong *)(querydata->response)) = (gulong)g_ascii_strtoll (argv[i], NULL, 10);
+            *((gulong *)(querydata->response)) = g_ascii_strtoull (argv[i], NULL, 10);
         }
       break;
 
@@ -226,19 +226,19 @@ rmg_journal_new (RmgOptions *options, GError **error)
       g_autofree gchar *services_sql = NULL;
 
       services_sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s        "
-                                      "(HASH      INT PRIMARY KEY NOT NULL, "
+                                      "(HASH      UNSIGNED INTEGER PRIMARY KEY NOT NULL, "
                                       " NAME      TEXT            NOT NULL, "
                                       " PRIVDATA  TEXT            NOT NULL, "
                                       " PUBLDATA  TEXT            NOT NULL, "
-                                      " RVECTOR  INT             NOT NULL, "
+                                      " RVECTOR   NUMERIC         NOT NULL, "
                                       " RELAXING  BOOL            NOT NULL, "
-                                      " TIMEOUT   INT             NOT NULL);",
+                                      " TIMEOUT   NUMERIC         NOT NULL);",
                                       rmg_table_services);
 
       if (sqlite3_exec (journal->database, services_sql, sqlite_callback, &data, &query_error)
           != SQLITE_OK)
         {
-          g_warning ("Fail to create crash table. SQL error %s", query_error);
+          g_warning ("Fail to create services table. SQL error %s", query_error);
           g_set_error (error,
                        g_quark_from_static_string ("JournalNew"),
                        1,
@@ -249,17 +249,17 @@ rmg_journal_new (RmgOptions *options, GError **error)
           g_autofree gchar *actions_sql = NULL;
 
           actions_sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s        "
-                                         "(HASH INT PRIMARY KEY    NOT   NULL, "
-                                         " SERVICE          INT    NOT   NULL, "
-                                         " TYPE             INT    NOT   NULL, "
-                                         " TLMIN            INT    NOT   NULL, "
-                                         " TLMAX            INT    NOT   NULL);",
+                                         "(HASH     UNSIGNED INTEGER PRIMARY KEY NOT NULL, "
+                                         " SERVICE  TEXT                NOT NULL, "
+                                         " TYPE     NUMERIC    NOT   NULL, "
+                                         " TLMIN    NUMERIC    NOT   NULL, "
+                                         " TLMAX    NUMERIC    NOT   NULL);",
                                          rmg_table_actions);
 
           if (sqlite3_exec (journal->database, actions_sql, sqlite_callback, &data, &query_error)
               != SQLITE_OK)
             {
-              g_warning ("Fail to create crash table. SQL error %s", query_error);
+              g_warning ("Fail to create actions table. SQL error %s", query_error);
               g_set_error (error,
                            g_quark_from_static_string ("JournalNew"),
                            1,
@@ -374,6 +374,11 @@ add_action_for_service (gpointer _action, gpointer _helper)
 
   g_autoptr (GError) error = NULL;
 
+  g_info ("Adding action entry %u for %s with hash %lu",
+           action->type,
+           helper->service->name,
+           action->hash);
+
   if (rmg_journal_add_action (helper->journal,
                               action->hash,
                               helper->service->name,
@@ -381,7 +386,7 @@ add_action_for_service (gpointer _action, gpointer _helper)
                               action->trigger_level_min,
                               action->trigger_level_max,
                               &error)
-      != RMG_STATUS_ERROR)
+      != RMG_STATUS_OK)
     {
       g_warning ("Fail to add action type %u for service %s. Error %s",
                  action->type,
@@ -501,9 +506,9 @@ rmg_journal_add_service (RmgJournal *journal,
 
   sql = g_strdup_printf ("INSERT INTO %s                                          "
                          "(HASH,NAME,PRIVDATA,PUBLDATA,RVECTOR,RELAXING,TIMEOUT)  "
-                         "VALUES(%lu, '%s', '%s', '%s', %ld, %d, %ld);           ",
+                         "VALUES(%ld, '%s', '%s', '%s', %ld, %d, %ld);           ",
                          rmg_table_services,
-                         hash,
+                         (glong)hash,
                          service_name,
                          private_data,
                          public_data,
@@ -514,7 +519,7 @@ rmg_journal_add_service (RmgJournal *journal,
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error) != SQLITE_OK)
     {
       g_set_error (error, g_quark_from_static_string ("JournalAddService"), 1, "SQL query error");
-      g_warning ("Fail to add new entry. SQL error %s", query_error);
+      g_warning ("Fail to add new service entry. SQL error %s", query_error);
       sqlite3_free (query_error);
 
       return RMG_STATUS_ERROR;
@@ -544,9 +549,9 @@ rmg_journal_add_action (RmgJournal *journal,
 
   sql = g_strdup_printf ("INSERT INTO %s                    "
                          "(HASH,SERVICE,TYPE,TLMIN,TLMAX)   "
-                         "VALUES(%lu, '%s', %u, %ld, %ld); ",
+                         "VALUES(%ld, '%s', %u, %ld, %ld); ",
                          rmg_table_actions,
-                         hash,
+                         (glong)hash,
                          service_name,
                          action_type,
                          trigger_level_min,
@@ -555,7 +560,7 @@ rmg_journal_add_action (RmgJournal *journal,
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error) != SQLITE_OK)
     {
       g_set_error (error, g_quark_from_static_string ("JournalAddAction"), 1, "SQL query error");
-      g_warning ("Fail to add new entry. SQL error %s", query_error);
+      g_warning ("Fail to add new action entry. SQL error %s", query_error);
       sqlite3_free (query_error);
 
       return RMG_STATUS_ERROR;
@@ -579,7 +584,7 @@ rmg_journal_get_private_data_path (RmgJournal *journal,
   g_assert (journal);
   g_assert (service_name);
 
-  sql = g_strdup_printf ("SELECT PRIVDATA FROM %s WHERE NAME IS %s",
+  sql = g_strdup_printf ("SELECT PRIVDATA FROM %s WHERE NAME IS '%s'",
                          rmg_table_services, service_name);
 
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
@@ -589,7 +594,7 @@ rmg_journal_get_private_data_path (RmgJournal *journal,
                    g_quark_from_static_string ("JournalGetPrivateData"),
                    1,
                    "SQL query error");
-      g_warning ("Fail to get victim. SQL error %s", query_error);
+      g_warning ("Fail to get private data path. SQL error %s", query_error);
       sqlite3_free (query_error);
     }
 
@@ -611,7 +616,7 @@ rmg_journal_get_public_data_path (RmgJournal *journal,
   g_assert (journal);
   g_assert (service_name);
 
-  sql = g_strdup_printf ("SELECT PUBLDATA FROM %s WHERE NAME IS %s",
+  sql = g_strdup_printf ("SELECT PUBLDATA FROM %s WHERE NAME IS '%s'",
                          rmg_table_services, service_name);
 
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
@@ -621,7 +626,7 @@ rmg_journal_get_public_data_path (RmgJournal *journal,
                    g_quark_from_static_string ("JournalGetPublicData"),
                    1,
                    "SQL query error");
-      g_warning ("Fail to get victim. SQL error %s", query_error);
+      g_warning ("Fail to get public data path. SQL error %s", query_error);
       sqlite3_free (query_error);
     }
 
@@ -646,7 +651,7 @@ rmg_journal_get_relaxing_state (RmgJournal *journal,
 
   data.response = (gpointer) & state;
 
-  sql = g_strdup_printf ("SELECT RELAXING FROM %s WHERE NAME IS %s",
+  sql = g_strdup_printf ("SELECT RELAXING FROM %s WHERE NAME IS '%s'",
                          rmg_table_services, service_name);
 
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
@@ -656,7 +661,7 @@ rmg_journal_get_relaxing_state (RmgJournal *journal,
                    g_quark_from_static_string ("JournalGetRelaxingState"),
                    1,
                    "SQL query error");
-      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      g_warning ("Fail to get relaxing state. SQL error %s", query_error);
       sqlite3_free (query_error);
     }
 
@@ -680,7 +685,7 @@ rmg_journal_set_relaxing_state (RmgJournal *journal,
   g_assert (journal);
   g_assert (service_name);
 
-  sql = g_strdup_printf ("UPDATE %s SET RELAXING = %d WHERE NAME IS %s",
+  sql = g_strdup_printf ("UPDATE %s SET RELAXING = %d WHERE NAME IS '%s'",
                          rmg_table_services, relaxing_status, service_name);
 
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
@@ -690,7 +695,7 @@ rmg_journal_set_relaxing_state (RmgJournal *journal,
                    g_quark_from_static_string ("JournalSetRelaxingState"),
                    1,
                    "SQL query error");
-      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      g_warning ("Fail to set relaxing state. SQL error %s", query_error);
       sqlite3_free (query_error);
       status = RMG_STATUS_ERROR;
     }
@@ -716,7 +721,7 @@ rmg_journal_get_relaxing_timeout (RmgJournal *journal,
 
   data.response = (gpointer) & timeout;
 
-  sql = g_strdup_printf ("SELECT TIMEOUT FROM %s WHERE NAME IS %s",
+  sql = g_strdup_printf ("SELECT TIMEOUT FROM %s WHERE NAME IS '%s'",
                          rmg_table_services, service_name);
 
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
@@ -726,7 +731,7 @@ rmg_journal_get_relaxing_timeout (RmgJournal *journal,
                    g_quark_from_static_string ("JournalGetRelaxingTimeout"),
                    1,
                    "SQL query error");
-      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      g_warning ("Fail to get relaxing timeout. SQL error %s", query_error);
       sqlite3_free (query_error);
     }
 
@@ -751,7 +756,7 @@ rmg_journal_get_rvector (RmgJournal *journal,
 
   data.response = (gpointer) & rvector;
 
-  sql = g_strdup_printf ("SELECT RVECTOR FROM %s WHERE NAME IS %s",
+  sql = g_strdup_printf ("SELECT RVECTOR FROM %s WHERE NAME IS '%s'",
                          rmg_table_services, service_name);
 
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
@@ -761,7 +766,7 @@ rmg_journal_get_rvector (RmgJournal *journal,
                    g_quark_from_static_string ("JournalGetGradiant"),
                    1,
                    "SQL query error");
-      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      g_warning ("Fail to get rvector. SQL error %s", query_error);
       sqlite3_free (query_error);
     }
 
@@ -785,7 +790,7 @@ rmg_journal_set_rvector (RmgJournal *journal,
   g_assert (journal);
   g_assert (service_name);
 
-  sql = g_strdup_printf ("UPDATE %s SET RVECTOR = %ld WHERE NAME IS %s",
+  sql = g_strdup_printf ("UPDATE %s SET RVECTOR = %ld WHERE NAME IS '%s'",
                          rmg_table_services, rvector, service_name);
 
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
@@ -795,7 +800,7 @@ rmg_journal_set_rvector (RmgJournal *journal,
                    g_quark_from_static_string ("JournalSetRelaxingState"),
                    1,
                    "SQL query error");
-      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      g_warning ("Fail to set rvector. SQL error %s", query_error);
       sqlite3_free (query_error);
       status = RMG_STATUS_ERROR;
     }
@@ -823,7 +828,7 @@ rmg_journal_get_service_action (RmgJournal *journal,
   rvector = rmg_journal_get_rvector (journal, service_name, error);
   data.response = (gpointer) & action_type;
 
-  sql = g_strdup_printf ("SELECT TYPE FROM %s WHERE SERVICE IS %s "
+  sql = g_strdup_printf ("SELECT TYPE FROM %s WHERE SERVICE IS '%s' "
                          "AND %ld BETWEEN TLMIN AND TLMAX",
                          rmg_table_actions, service_name, rvector);
 
@@ -834,7 +839,7 @@ rmg_journal_get_service_action (RmgJournal *journal,
                    g_quark_from_static_string ("JournalGetServiceAction"),
                    1,
                    "SQL query error");
-      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      g_warning ("Fail to get service action. SQL error %s", query_error);
       sqlite3_free (query_error);
     }
 
@@ -857,7 +862,7 @@ rmg_journal_remove_service (RmgJournal *journal,
   g_assert (journal);
   g_assert (service_name);
 
-  service_sql = g_strdup_printf ("DELETE FROM %s WHERE NAME IS %s",
+  service_sql = g_strdup_printf ("DELETE FROM %s WHERE NAME IS '%s'",
                                  rmg_table_services, service_name);
 
   if (sqlite3_exec (journal->database, service_sql, sqlite_callback, &data, &query_error)
@@ -867,7 +872,7 @@ rmg_journal_remove_service (RmgJournal *journal,
                    g_quark_from_static_string ("JournalRemoveService"),
                    1,
                    "SQL query error");
-      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      g_warning ("Fail to remove service entry. SQL error %s", query_error);
       sqlite3_free (query_error);
       status = RMG_STATUS_ERROR;
     }
@@ -875,7 +880,7 @@ rmg_journal_remove_service (RmgJournal *journal,
     {
       g_autofree gchar *actions_sql = NULL;
 
-      service_sql = g_strdup_printf ("DELETE FROM %s WHERE SERVICE IS %s",
+      service_sql = g_strdup_printf ("DELETE FROM %s WHERE SERVICE IS '%s'",
                                      rmg_table_actions, service_name);
 
       if (sqlite3_exec (journal->database, service_sql, sqlite_callback, &data, &query_error)
@@ -885,7 +890,7 @@ rmg_journal_remove_service (RmgJournal *journal,
                        g_quark_from_static_string ("JournalRemoveService"),
                        1,
                        "SQL query error");
-          g_warning ("Fail to get entry count. SQL error %s", query_error);
+          g_warning ("Fail to remove actions. SQL error %s", query_error);
           sqlite3_free (query_error);
           status = RMG_STATUS_ERROR;
         }
@@ -912,7 +917,7 @@ rmg_journal_get_hash (RmgJournal *journal,
 
   data.response = (gpointer) & hash;
 
-  sql = g_strdup_printf ("SELECT HASH FROM %s WHERE NAME IS %s",
+  sql = g_strdup_printf ("SELECT HASH FROM %s WHERE NAME IS '%s'",
                          rmg_table_services, service_name);
 
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
