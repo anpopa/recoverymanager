@@ -374,10 +374,9 @@ add_action_for_service (gpointer _action, gpointer _helper)
 
   g_autoptr (GError) error = NULL;
 
-  g_info ("Adding action entry %u for %s with hash %lu",
-           action->type,
-           helper->service->name,
-           action->hash);
+  g_info ("Adding action='%s' for service='%s'",
+          g_action_name[action->type],
+          helper->service->name);
 
   if (rmg_journal_add_action (helper->journal,
                               action->hash,
@@ -452,6 +451,8 @@ rmg_journal_reload_units (RmgJournal *journal, GError **error)
               g_warning ("Fail to remove existent service entry %s", service_entry->name);
               continue;
             }
+
+          g_info ("Adding service='%s' as new entry in database", service_entry->name);
 
           if (rmg_journal_add_service (journal,
                                        hash,
