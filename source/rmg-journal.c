@@ -36,7 +36,19 @@
  * @enum Journal query type
  */
 typedef enum _JournalQueryType {
-  QUERY_CREATE,
+  QUERY_CREATE_TABLES,
+  QUERY_GET_HASH,
+  QUERY_ADD_SERVICE,
+  QUERY_REMOVE_SERVICE,
+  QUERY_ADD_ACTION,
+  QUERY_GET_PRIVATE_DATA,
+  QUERY_GET_PUBLIC_DATA,
+  QUERY_GET_RELAXING,
+  QUERY_SET_RELAXING,
+  QUERY_GET_TIMEOUT,
+  QUERY_GET_RVECTOR,
+  QUERY_SET_RVECTOR,
+  QUERY_GET_ACTION,
 } JournalQueryType;
 
 /**
@@ -47,6 +59,14 @@ typedef struct _JournalQueryData {
   gpointer response;
 } JournalQueryData;
 
+/**
+ * @struct Add action object helper
+ */
+typedef struct _JournalAddAction {
+  RmgJournal *journal;
+  RmgSEntry  *service;
+} JournalAddAction;
+
 const gchar *rmg_table_services = "Services";
 const gchar *rmg_table_actions = "Actions";
 
@@ -55,6 +75,9 @@ const gchar *rmg_table_actions = "Actions";
  */
 static int sqlite_callback (void *data, int argc, char **argv, char **colname);
 
+/**
+ * @brief Parser markup callback for element start
+ */
 static void parser_start_element (GMarkupParseContext *context,
                                   const gchar         *element_name,
                                   const gchar        **attribute_names,
@@ -62,12 +85,18 @@ static void parser_start_element (GMarkupParseContext *context,
                                   gpointer user_data,
                                   GError             **error);
 
+/**
+ * @brief Parser markup callback for element text data
+ */
 static void parser_text_data (GMarkupParseContext *context,
                               const gchar         *text,
                               gsize text_len,
                               gpointer user_data,
                               GError             **error);
 
+/**
+ * @brief Markup parser definition
+ */
 static GMarkupParser markup_parser =
 {
   parser_start_element,
@@ -82,13 +111,80 @@ sqlite_callback (void *data, int argc, char **argv, char **colname)
 {
   JournalQueryData *querydata = (JournalQueryData *)data;
 
-  RMG_UNUSED (argc);
-  RMG_UNUSED (argv);
-  RMG_UNUSED (colname);
-
   switch (querydata->type)
     {
-    case QUERY_CREATE:
+    case QUERY_CREATE_TABLES:
+      break;
+
+    case QUERY_GET_HASH:
+      for (gint i = 0; i < argc; i++)
+        {
+          if (g_strcmp0 (colname[i], "HASH") == 0)
+            *((gulong *)(querydata->response)) = (gulong)g_ascii_strtoll (argv[i], NULL, 10);
+        }
+      break;
+
+    case QUERY_ADD_SERVICE:
+      break;
+
+    case QUERY_REMOVE_SERVICE:
+      break;
+
+    case QUERY_ADD_ACTION:
+      break;
+
+    case QUERY_GET_PRIVATE_DATA:
+      for (gint i = 0; i < argc; i++)
+        {
+          if (g_strcmp0 (colname[i], "PRIVDATA") == 0)
+            querydata->response = (gpointer)g_strdup (argv[i]);
+        }
+      break;
+
+    case QUERY_GET_PUBLIC_DATA:
+      for (gint i = 0; i < argc; i++)
+        {
+          if (g_strcmp0 (colname[i], "PUBLDATA") == 0)
+            querydata->response = (gpointer)g_strdup (argv[i]);
+        }
+      break;
+
+    case QUERY_GET_RELAXING:
+      for (gint i = 0; i < argc; i++)
+        {
+          if (g_strcmp0 (colname[i], "RELAXING") == 0)
+            *((gboolean *)(querydata->response)) = (gboolean)g_ascii_strtoll (argv[i], NULL, 10);
+        }
+      break;
+
+    case QUERY_SET_RELAXING:
+      break;
+
+    case QUERY_GET_TIMEOUT:
+      for (gint i = 0; i < argc; i++)
+        {
+          if (g_strcmp0 (colname[i], "TIMEOUT") == 0)
+            *((glong *)(querydata->response)) = g_ascii_strtoll (argv[i], NULL, 10);
+        }
+      break;
+
+    case QUERY_GET_RVECTOR:
+      for (gint i = 0; i < argc; i++)
+        {
+          if (g_strcmp0 (colname[i], "RVECTOR") == 0)
+            *((glong *)(querydata->response)) = g_ascii_strtoll (argv[i], NULL, 10);
+        }
+      break;
+
+    case QUERY_SET_RVECTOR:
+      break;
+
+    case QUERY_GET_ACTION:
+      for (gint i = 0; i < argc; i++)
+        {
+          if (g_strcmp0 (colname[i], "TYPE") == 0)
+            *((RmgActionType *)(querydata->response)) = (RmgActionType)g_ascii_strtoll (argv[i], NULL, 10);
+        }
       break;
 
     default:
@@ -106,7 +202,7 @@ rmg_journal_new (RmgOptions *options, GError **error)
   g_autofree gchar *dbfile = NULL;
   gchar *query_error = NULL;
   JournalQueryData data = {
-    .type = QUERY_CREATE,
+    .type = QUERY_CREATE_TABLES,
     .response = NULL
   };
 
@@ -129,15 +225,14 @@ rmg_journal_new (RmgOptions *options, GError **error)
     {
       g_autofree gchar *services_sql = NULL;
 
-      services_sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s      "
-                                      "(ID INT PRIMARY KEY    NOT   NULL, "
-                                      "NAME            TEXT   NOT   NULL, "
-                                      "VERSION         INT    NOT   NULL, "
-                                      "PRIVDATA        TEXT   NOT   NULL, "
-                                      "PUBLDATA        TEXT   NOT   NULL, "
-                                      "GRADIANT        INT    NOT   NULL, "
-                                      "RELAXING        BOOL   NOT   NULL, "
-                                      "TIMEOUT         INT    NOT   NULL);",
+      services_sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s        "
+                                      "(HASH      INT PRIMARY KEY NOT NULL, "
+                                      " NAME      TEXT            NOT NULL, "
+                                      " PRIVDATA  TEXT            NOT NULL, "
+                                      " PUBLDATA  TEXT            NOT NULL, "
+                                      " RVECTOR  INT             NOT NULL, "
+                                      " RELAXING  BOOL            NOT NULL, "
+                                      " TIMEOUT   INT             NOT NULL);",
                                       rmg_table_services);
 
       if (sqlite3_exec (journal->database, services_sql, sqlite_callback, &data, &query_error)
@@ -153,12 +248,12 @@ rmg_journal_new (RmgOptions *options, GError **error)
         {
           g_autofree gchar *actions_sql = NULL;
 
-          actions_sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s      "
-                                         "(ID INT PRIMARY KEY    NOT   NULL, "
-                                         "SERVICE         INT    NOT   NULL, "
-                                         "TYPE            INT    NOT   NULL, "
-                                         "LEVEL           INT    NOT   NULL, "
-                                         "NEXT            INT    NOT   NULL);",
+          actions_sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s        "
+                                         "(HASH INT PRIMARY KEY    NOT   NULL, "
+                                         " SERVICE          INT    NOT   NULL, "
+                                         " TYPE             INT    NOT   NULL, "
+                                         " TLMIN            INT    NOT   NULL, "
+                                         " TLMAX            INT    NOT   NULL);",
                                          rmg_table_actions);
 
           if (sqlite3_exec (journal->database, actions_sql, sqlite_callback, &data, &query_error)
@@ -238,9 +333,10 @@ parser_start_element (GMarkupParseContext *context,
         }
       else
         {
-          glong g = rmg_sentry_get_gradiant (entry) + retry;
-          rmg_sentry_set_gradiant (entry, g);
-          rmg_sentry_add_action (entry, action_type, g);
+          glong g = rmg_sentry_get_rvector (entry) + retry;
+
+          rmg_sentry_add_action (entry, action_type, rmg_sentry_get_rvector (entry), g);
+          rmg_sentry_set_rvector (entry, g);
         }
     }
 }
@@ -270,6 +366,30 @@ parser_text_data (GMarkupParseContext *context,
     rmg_sentry_set_public_data_path (entry, buffer);
 }
 
+static void
+add_action_for_service (gpointer _action, gpointer _helper)
+{
+  RmgAEntry *action = (RmgAEntry *)_action;
+  JournalAddAction *helper = (JournalAddAction *)_helper;
+
+  g_autoptr (GError) error = NULL;
+
+  if (rmg_journal_add_action (helper->journal,
+                              action->hash,
+                              helper->service->name,
+                              action->type,
+                              action->trigger_level_min,
+                              action->trigger_level_max,
+                              &error)
+      != RMG_STATUS_ERROR)
+    {
+      g_warning ("Fail to add action type %u for service %s. Error %s",
+                 action->type,
+                 helper->service->name,
+                 error->message);
+    }
+}
+
 RmgStatus
 rmg_journal_reload_units (RmgJournal *journal, GError **error)
 {
@@ -292,6 +412,7 @@ rmg_journal_reload_units (RmgJournal *journal, GError **error)
       g_autoptr (GError) element_error = NULL;
       g_autofree gchar *fpath = NULL;
       g_autofree gchar *fdata = NULL;
+      gulong hash;
 
       fpath = g_build_filename (opt_unitsdir, nfile, NULL);
       if (!g_file_get_contents (fpath, &fdata, NULL, NULL))
@@ -300,12 +421,55 @@ rmg_journal_reload_units (RmgJournal *journal, GError **error)
           continue;
         }
 
-      service_entry = rmg_sentry_new (rmg_utils_jenkins_hash (edata));
+      hash = rmg_utils_jenkins_hash (fdata);
+      service_entry = rmg_sentry_new (hash);
       parser_context = g_markup_parse_context_new (&markup_parser, 0, service_entry, NULL);
 
       if (!g_markup_parse_context_parse (parser_context, fdata, (gssize)strlen (fdata), &element_error))
         {
           g_warning ("Parser failed for unit %s. Error %s", nfile, element_error->message);
+        }
+      else
+        {
+          gulong exist_hash = rmg_journal_get_hash (journal, service_entry->name, NULL);
+
+          if (hash == exist_hash)
+            {
+              g_debug ("Service %s parsed and version already in database", service_entry->name);
+              continue;
+            }
+
+          if (rmg_journal_remove_service (journal,
+                                          service_entry->name,
+                                          &element_error)
+              != RMG_STATUS_OK)
+            {
+              g_warning ("Fail to remove existent service entry %s", service_entry->name);
+              continue;
+            }
+
+          if (rmg_journal_add_service (journal,
+                                       hash,
+                                       service_entry->name,
+                                       service_entry->private_data,
+                                       service_entry->public_data,
+                                       service_entry->timeout,
+                                       &element_error)
+              == RMG_STATUS_OK)
+            {
+              JournalAddAction addhelper = {
+                .journal = journal,
+                .service = service_entry
+              };
+
+              g_list_foreach (service_entry->actions, add_action_for_service, &addhelper);
+            }
+          else
+            {
+              g_warning ("Fail to add service entry for unit %s. Error %s",
+                         nfile,
+                         element_error->message);
+            }
         }
     }
 
@@ -314,3 +478,453 @@ rmg_journal_reload_units (RmgJournal *journal, GError **error)
   return RMG_STATUS_OK;
 }
 
+RmgStatus
+rmg_journal_add_service (RmgJournal *journal,
+                         gulong hash,
+                         const gchar *service_name,
+                         const gchar *private_data,
+                         const gchar *public_data,
+                         glong timeout,
+                         GError **error)
+{
+  g_autofree gchar *sql = NULL;
+  gchar *query_error = NULL;
+  JournalQueryData data = {
+    .type = QUERY_ADD_SERVICE,
+    .response = NULL
+  };
+
+  g_assert (journal);
+  g_assert (service_name);
+  g_assert (private_data);
+  g_assert (public_data);
+
+  sql = g_strdup_printf ("INSERT INTO %s                                          "
+                         "(HASH,NAME,PRIVDATA,PUBLDATA,RVECTOR,RELAXING,TIMEOUT)  "
+                         "VALUES(%lu, '%s', '%s', '%s', %ld, %d, %ld);           ",
+                         rmg_table_services,
+                         hash,
+                         service_name,
+                         private_data,
+                         public_data,
+                         (glong)0,
+                         0,
+                         timeout);
+
+  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error) != SQLITE_OK)
+    {
+      g_set_error (error, g_quark_from_static_string ("JournalAddService"), 1, "SQL query error");
+      g_warning ("Fail to add new entry. SQL error %s", query_error);
+      sqlite3_free (query_error);
+
+      return RMG_STATUS_ERROR;
+    }
+
+  return RMG_STATUS_OK;
+}
+
+RmgStatus
+rmg_journal_add_action (RmgJournal *journal,
+                        gulong hash,
+                        const gchar *service_name,
+                        RmgActionType action_type,
+                        glong trigger_level_min,
+                        glong trigger_level_max,
+                        GError **error)
+{
+  g_autofree gchar *sql = NULL;
+  gchar *query_error = NULL;
+  JournalQueryData data = {
+    .type = QUERY_ADD_ACTION,
+    .response = NULL
+  };
+
+  g_assert (journal);
+  g_assert (service_name);
+
+  sql = g_strdup_printf ("INSERT INTO %s                    "
+                         "(HASH,SERVICE,TYPE,TLMIN,TLMAX)   "
+                         "VALUES(%lu, '%s', %u, %ld, %ld); ",
+                         rmg_table_actions,
+                         hash,
+                         service_name,
+                         action_type,
+                         trigger_level_min,
+                         trigger_level_max);
+
+  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error) != SQLITE_OK)
+    {
+      g_set_error (error, g_quark_from_static_string ("JournalAddAction"), 1, "SQL query error");
+      g_warning ("Fail to add new entry. SQL error %s", query_error);
+      sqlite3_free (query_error);
+
+      return RMG_STATUS_ERROR;
+    }
+
+  return RMG_STATUS_OK;
+}
+
+gchar *
+rmg_journal_get_private_data_path (RmgJournal *journal,
+                                   const gchar *service_name,
+                                   GError **error)
+{
+  g_autofree gchar *sql = NULL;
+  gchar *query_error = NULL;
+  JournalQueryData data = {
+    .type = QUERY_GET_PRIVATE_DATA,
+    .response = NULL
+  };
+
+  g_assert (journal);
+  g_assert (service_name);
+
+  sql = g_strdup_printf ("SELECT PRIVDATA FROM %s WHERE NAME IS %s",
+                         rmg_table_services, service_name);
+
+  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
+      != SQLITE_OK)
+    {
+      g_set_error (error,
+                   g_quark_from_static_string ("JournalGetPrivateData"),
+                   1,
+                   "SQL query error");
+      g_warning ("Fail to get victim. SQL error %s", query_error);
+      sqlite3_free (query_error);
+    }
+
+  return (gchar *)data.response;
+}
+
+gchar *
+rmg_journal_get_public_data_path (RmgJournal *journal,
+                                  const gchar *service_name,
+                                  GError **error)
+{
+  g_autofree gchar *sql = NULL;
+  gchar *query_error = NULL;
+  JournalQueryData data = {
+    .type = QUERY_GET_PUBLIC_DATA,
+    .response = NULL
+  };
+
+  g_assert (journal);
+  g_assert (service_name);
+
+  sql = g_strdup_printf ("SELECT PUBLDATA FROM %s WHERE NAME IS %s",
+                         rmg_table_services, service_name);
+
+  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
+      != SQLITE_OK)
+    {
+      g_set_error (error,
+                   g_quark_from_static_string ("JournalGetPublicData"),
+                   1,
+                   "SQL query error");
+      g_warning ("Fail to get victim. SQL error %s", query_error);
+      sqlite3_free (query_error);
+    }
+
+  return (gchar *)data.response;
+}
+
+gboolean
+rmg_journal_get_relaxing_state (RmgJournal *journal,
+                                const gchar *service_name,
+                                GError **error)
+{
+  g_autofree gchar *sql = NULL;
+  gchar *query_error = NULL;
+  gboolean state = FALSE;
+  JournalQueryData data = {
+    .type = QUERY_GET_RELAXING,
+    .response = NULL
+  };
+
+  g_assert (journal);
+  g_assert (service_name);
+
+  data.response = (gpointer) & state;
+
+  sql = g_strdup_printf ("SELECT RELAXING FROM %s WHERE NAME IS %s",
+                         rmg_table_services, service_name);
+
+  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
+      != SQLITE_OK)
+    {
+      g_set_error (error,
+                   g_quark_from_static_string ("JournalGetRelaxingState"),
+                   1,
+                   "SQL query error");
+      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      sqlite3_free (query_error);
+    }
+
+  return state;
+}
+
+RmgStatus
+rmg_journal_set_relaxing_state (RmgJournal *journal,
+                                const gchar *service_name,
+                                gboolean relaxing_status,
+                                GError **error)
+{
+  g_autofree gchar *sql = NULL;
+  gchar *query_error = NULL;
+  RmgStatus status = RMG_STATUS_OK;
+  JournalQueryData data = {
+    .type = QUERY_GET_RELAXING,
+    .response = NULL
+  };
+
+  g_assert (journal);
+  g_assert (service_name);
+
+  sql = g_strdup_printf ("UPDATE %s SET RELAXING = %d WHERE NAME IS %s",
+                         rmg_table_services, relaxing_status, service_name);
+
+  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
+      != SQLITE_OK)
+    {
+      g_set_error (error,
+                   g_quark_from_static_string ("JournalSetRelaxingState"),
+                   1,
+                   "SQL query error");
+      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      sqlite3_free (query_error);
+      status = RMG_STATUS_ERROR;
+    }
+
+  return status;
+}
+
+glong
+rmg_journal_get_relaxing_timeout (RmgJournal *journal,
+                                  const gchar *service_name,
+                                  GError **error)
+{
+  g_autofree gchar *sql = NULL;
+  gchar *query_error = NULL;
+  glong timeout = 0;
+  JournalQueryData data = {
+    .type = QUERY_GET_RELAXING,
+    .response = NULL
+  };
+
+  g_assert (journal);
+  g_assert (service_name);
+
+  data.response = (gpointer) & timeout;
+
+  sql = g_strdup_printf ("SELECT TIMEOUT FROM %s WHERE NAME IS %s",
+                         rmg_table_services, service_name);
+
+  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
+      != SQLITE_OK)
+    {
+      g_set_error (error,
+                   g_quark_from_static_string ("JournalGetRelaxingTimeout"),
+                   1,
+                   "SQL query error");
+      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      sqlite3_free (query_error);
+    }
+
+  return timeout;
+}
+
+glong
+rmg_journal_get_rvector (RmgJournal *journal,
+                         const gchar *service_name,
+                         GError **error)
+{
+  g_autofree gchar *sql = NULL;
+  gchar *query_error = NULL;
+  glong rvector = 0;
+  JournalQueryData data = {
+    .type = QUERY_GET_RVECTOR,
+    .response = NULL
+  };
+
+  g_assert (journal);
+  g_assert (service_name);
+
+  data.response = (gpointer) & rvector;
+
+  sql = g_strdup_printf ("SELECT RVECTOR FROM %s WHERE NAME IS %s",
+                         rmg_table_services, service_name);
+
+  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
+      != SQLITE_OK)
+    {
+      g_set_error (error,
+                   g_quark_from_static_string ("JournalGetGradiant"),
+                   1,
+                   "SQL query error");
+      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      sqlite3_free (query_error);
+    }
+
+  return rvector;
+}
+
+RmgStatus
+rmg_journal_set_rvector (RmgJournal *journal,
+                         const gchar *service_name,
+                         glong rvector,
+                         GError **error)
+{
+  g_autofree gchar *sql = NULL;
+  gchar *query_error = NULL;
+  RmgStatus status = RMG_STATUS_OK;
+  JournalQueryData data = {
+    .type = QUERY_SET_RVECTOR,
+    .response = NULL
+  };
+
+  g_assert (journal);
+  g_assert (service_name);
+
+  sql = g_strdup_printf ("UPDATE %s SET RVECTOR = %ld WHERE NAME IS %s",
+                         rmg_table_services, rvector, service_name);
+
+  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
+      != SQLITE_OK)
+    {
+      g_set_error (error,
+                   g_quark_from_static_string ("JournalSetRelaxingState"),
+                   1,
+                   "SQL query error");
+      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      sqlite3_free (query_error);
+      status = RMG_STATUS_ERROR;
+    }
+
+  return status;
+}
+
+RmgActionType
+rmg_journal_get_service_action (RmgJournal *journal,
+                                const gchar *service_name,
+                                GError **error)
+{
+  g_autofree gchar *sql = NULL;
+  gchar *query_error = NULL;
+  RmgActionType action_type = ACTION_INVALID;
+  glong rvector = 0;
+  JournalQueryData data = {
+    .type = QUERY_GET_ACTION,
+    .response = NULL
+  };
+
+  g_assert (journal);
+  g_assert (service_name);
+
+  rvector = rmg_journal_get_rvector (journal, service_name, error);
+  data.response = (gpointer) & action_type;
+
+  sql = g_strdup_printf ("SELECT TYPE FROM %s WHERE SERVICE IS %s "
+                         "AND %ld BETWEEN TLMIN AND TLMAX",
+                         rmg_table_actions, service_name, rvector);
+
+  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
+      != SQLITE_OK)
+    {
+      g_set_error (error,
+                   g_quark_from_static_string ("JournalGetServiceAction"),
+                   1,
+                   "SQL query error");
+      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      sqlite3_free (query_error);
+    }
+
+  return action_type;
+}
+
+RmgStatus
+rmg_journal_remove_service (RmgJournal *journal,
+                            const gchar *service_name,
+                            GError **error)
+{
+  g_autofree gchar *service_sql = NULL;
+  gchar *query_error = NULL;
+  RmgStatus status = RMG_STATUS_OK;
+  JournalQueryData data = {
+    .type = QUERY_REMOVE_SERVICE,
+    .response = NULL
+  };
+
+  g_assert (journal);
+  g_assert (service_name);
+
+  service_sql = g_strdup_printf ("DELETE FROM %s WHERE NAME IS %s",
+                                 rmg_table_services, service_name);
+
+  if (sqlite3_exec (journal->database, service_sql, sqlite_callback, &data, &query_error)
+      != SQLITE_OK)
+    {
+      g_set_error (error,
+                   g_quark_from_static_string ("JournalRemoveService"),
+                   1,
+                   "SQL query error");
+      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      sqlite3_free (query_error);
+      status = RMG_STATUS_ERROR;
+    }
+  else
+    {
+      g_autofree gchar *actions_sql = NULL;
+
+      service_sql = g_strdup_printf ("DELETE FROM %s WHERE SERVICE IS %s",
+                                     rmg_table_actions, service_name);
+
+      if (sqlite3_exec (journal->database, service_sql, sqlite_callback, &data, &query_error)
+          != SQLITE_OK)
+        {
+          g_set_error (error,
+                       g_quark_from_static_string ("JournalRemoveService"),
+                       1,
+                       "SQL query error");
+          g_warning ("Fail to get entry count. SQL error %s", query_error);
+          sqlite3_free (query_error);
+          status = RMG_STATUS_ERROR;
+        }
+    }
+
+  return status;
+}
+
+gulong
+rmg_journal_get_hash (RmgJournal *journal,
+                      const gchar *service_name,
+                      GError **error)
+{
+  g_autofree gchar *sql = NULL;
+  gchar *query_error = NULL;
+  gulong hash = 0;
+  JournalQueryData data = {
+    .type = QUERY_GET_HASH,
+    .response = NULL
+  };
+
+  g_assert (journal);
+  g_assert (service_name);
+
+  data.response = (gpointer) & hash;
+
+  sql = g_strdup_printf ("SELECT HASH FROM %s WHERE NAME IS %s",
+                         rmg_table_services, service_name);
+
+  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
+      != SQLITE_OK)
+    {
+      g_set_error (error,
+                   g_quark_from_static_string ("JournalGetRelaxingTimeout"),
+                   1,
+                   "SQL query error");
+      g_warning ("Fail to get entry count. SQL error %s", query_error);
+      sqlite3_free (query_error);
+    }
+
+  return hash;
+}

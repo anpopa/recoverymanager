@@ -41,10 +41,10 @@ G_BEGIN_DECLS
  * @brief The RmgAEntry opaque data structure
  */
 typedef struct _RmgAEntry {
-  gulong id;
-  glong level;
+  gulong hash;
   RmgActionType type;
-  gulong nextid;
+  glong trigger_level_min;
+  glong trigger_level_max;
 } RmgAEntry;
 
 /**
@@ -52,12 +52,11 @@ typedef struct _RmgAEntry {
  * @brief The RmgSEntry opaque data structure
  */
 typedef struct _RmgSEntry {
-  gulong id;
+  gulong hash;
   gchar *name;
-  gulong version;
   gchar *private_data;
   gchar *public_data;
-  glong gradiant;
+  glong rvector;
   gboolean relaxing;
   glong timeout;
   const gchar *parser_current_element;
@@ -104,7 +103,7 @@ void rmg_sentry_set_public_data_path (RmgSEntry *sentry, const gchar *dpath);
 /**
  * @brief Setter
  */
-void rmg_sentry_set_gradiant (RmgSEntry *sentry, glong gradiant);
+void rmg_sentry_set_rvector (RmgSEntry *sentry, glong rvector);
 
 /**
  * @brief Setter
@@ -119,12 +118,12 @@ void rmg_sentry_set_timeout (RmgSEntry *sentry, glong timeout);
 /**
  * @brief Setter
  */
-void rmg_sentry_add_action (RmgSEntry *sentry, RmgActionType type, glong level);
+void rmg_sentry_add_action (RmgSEntry *sentry, RmgActionType type, glong trigger_level_min, glong trigger_level_max);
 
 /**
  * @brief Getter
  */
-gulong rmg_sentry_get_version (RmgSEntry *sentry);
+gulong rmg_sentry_get_hash (RmgSEntry *sentry);
 
 /**
  * @brief Getter
@@ -144,7 +143,7 @@ const gchar *rmg_sentry_get_public_data_path (RmgSEntry *sentry);
 /**
  * @brief Getter
  */
-glong rmg_sentry_get_gradiant (RmgSEntry *sentry);
+glong rmg_sentry_get_rvector (RmgSEntry *sentry);
 
 /**
  * @brief Getter

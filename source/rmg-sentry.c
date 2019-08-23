@@ -42,9 +42,9 @@ rmg_sentry_new (gulong version)
 
   g_ref_count_init (&sentry->rc);
 
+  sentry->hash = version;
   sentry->relaxing = FALSE;
-  sentry->id = version;
-  sentry->version = version;
+  sentry->rvector = 0;
   sentry->actions = NULL;
 
   return sentry;
@@ -108,10 +108,10 @@ rmg_sentry_set_public_data_path (RmgSEntry *sentry, const gchar *dpath)
 }
 
 void
-rmg_sentry_set_gradiant (RmgSEntry *sentry, glong gradiant)
+rmg_sentry_set_rvector (RmgSEntry *sentry, glong rvector)
 {
   g_assert (sentry);
-  sentry->gradiant = gradiant;
+  sentry->rvector = rvector;
 }
 
 void
@@ -129,24 +129,29 @@ rmg_sentry_set_timeout (RmgSEntry *sentry, glong timeout)
 }
 
 void
-rmg_sentry_add_action (RmgSEntry *sentry, RmgActionType type, glong level)
+rmg_sentry_add_action (RmgSEntry *sentry,
+                       RmgActionType type,
+                       glong trigger_level_min,
+                       glong trigger_level_max)
 {
   RmgAEntry *action = g_new0 (RmgAEntry, 1);
+  static gulong local_increment = 0;
 
   g_assert (sentry);
 
-  action->id = sentry->id + (gulong)type + (gulong)level;
-  action->level = level;
+  action->hash = sentry->hash + local_increment++;
   action->type = type;
+  action->trigger_level_min = trigger_level_min;
+  action->trigger_level_max = trigger_level_max;
 
   sentry->actions = g_list_append (sentry->actions, RMG_AENTRY_TO_PTR (action));
 }
 
 gulong
-rmg_sentry_get_version (RmgSEntry *sentry)
+rmg_sentry_get_hash (RmgSEntry *sentry)
 {
   g_assert (sentry);
-  return sentry->version;
+  return sentry->hash;
 }
 
 const gchar *
@@ -171,10 +176,10 @@ rmg_sentry_get_public_data_path (RmgSEntry *sentry)
 }
 
 glong
-rmg_sentry_get_gradiant (RmgSEntry *sentry)
+rmg_sentry_get_rvector (RmgSEntry *sentry)
 {
   g_assert (sentry);
-  return sentry->gradiant;
+  return sentry->rvector;
 }
 
 gboolean

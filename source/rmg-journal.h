@@ -77,6 +77,169 @@ void rmg_journal_unref (RmgJournal *journal);
  */
 RmgStatus rmg_journal_reload_units (RmgJournal *journal, GError **error);
 
+/**
+ * @brief Get service hash if exist
+ * @param journal Pointer to the journal object
+ * @param service_name The service name to lookup
+ * @param error The GError object or NULL
+ * @return If found return the current version in DB and 0 if not found
+ */
+gulong rmg_journal_get_hash (RmgJournal *journal,
+                             const gchar *service_name,
+                             GError **error);
+
+/**
+ * @brief Add new service entry in database
+ *
+ * @param journal Pointer to the journal object
+ * @param hash The entry unique hash value
+ * @param service_name The service name to lookup
+ * @param private_data Private data directory path
+ * @param public_data Public data directory path
+ * @param timeput Relaxation timeout
+ * @param error The GError object or NULL
+ *
+ * @return On success return RMG_STATUS_OK
+ */
+RmgStatus rmg_journal_add_service (RmgJournal *journal,
+                                   gulong hash,
+                                   const gchar *service_name,
+                                   const gchar *private_data,
+                                   const gchar *public_data,
+                                   glong timeout,
+                                   GError **error);
+/**
+ * @brief Add new action entry in database
+ *
+ * @param journal Pointer to the journal object
+ * @param hash The entry unique hash value
+ * @param service_name The service name to lookup
+ * @param trigger_level_min The rvector min trigger level
+ * @param trigger_level_max The rvector max trigger level
+ * @param error The GError object or NULL
+ *
+ * @return On success return RMG_STATUS_OK
+ */
+RmgStatus rmg_journal_add_action (RmgJournal *journal,
+                                  gulong hash,
+                                  const gchar *service_name,
+                                  RmgActionType action_type,
+                                  glong trigger_level_min,
+                                  glong trigger_level_max,
+                                  GError **error);
+/**
+ * @brief Get private data path for service
+ *
+ * @param journal Pointer to the journal object
+ * @param service_name The service name to lookup
+ * @param error The GError object or NULL
+ *
+ * @return A new allocated string with requested data
+ */
+gchar *rmg_journal_get_private_data_path (RmgJournal *journal,
+                                          const gchar *service_name,
+                                          GError **error);
+/**
+ * @brief Get public data path for service
+ *
+ * @param journal Pointer to the journal object
+ * @param service_name The service name to lookup
+ * @param error The GError object or NULL
+ *
+ * @return A new allocated string with requested data
+ */
+gchar *rmg_journal_get_public_data_path (RmgJournal *journal,
+                                         const gchar *service_name,
+                                         GError **error);
+/**
+ * @brief Get relaxing state
+ *
+ * @param journal Pointer to the journal object
+ * @param service_name The service name to lookup
+ * @param error The GError object or NULL
+ *
+ * @return Boolean value of relaxing state
+ */
+gboolean rmg_journal_get_relaxing_state (RmgJournal *journal,
+                                         const gchar *service_name,
+                                         GError **error);
+/**
+ * @brief Set relaxing state
+ *
+ * @param journal Pointer to the journal object
+ * @param service_name The service name to lookup
+ * @param relaxing_status The new state
+ * @param error The GError object or NULL
+ *
+ * @return On success return RMG_STATUS_OK
+ */
+RmgStatus rmg_journal_set_relaxing_state (RmgJournal *journal,
+                                          const gchar *service_name,
+                                          gboolean relaxing_status,
+                                          GError **error);
+/**
+ * @brief Get timeout value
+ *
+ * @param journal Pointer to the journal object
+ * @param service_name The service name to lookup
+ * @param error The GError object or NULL
+ *
+ * @return Timeout value
+ */
+glong rmg_journal_get_relaxing_timeout (RmgJournal *journal,
+                                        const gchar *service_name,
+                                        GError **error);
+/**
+ * @brief Get rvector value
+ *
+ * @param journal Pointer to the journal object
+ * @param service_name The service name to lookup
+ * @param error The GError object or NULL
+ *
+ * @return Gradiant value
+ */
+glong rmg_journal_get_rvector (RmgJournal *journal,
+                               const gchar *service_name,
+                               GError **error);
+
+/**
+ * @brief Set rvector value
+ *
+ * @param journal Pointer to the journal object
+ * @param service_name The service name to lookup
+ * @param error The GError object or NULL
+ *
+ * @return On success return RMG_STATUS_OK
+ */
+RmgStatus rmg_journal_set_rvector (RmgJournal *journal,
+                                   const gchar *service_name,
+                                   glong rvector,
+                                   GError **error);
+/**
+ * @brief Get current action for service
+ *
+ * @param journal Pointer to the journal object
+ * @param service_name The service name to lookup
+ * @param error The GError object or NULL
+ *
+ * @return The current action according with service state
+ */
+RmgActionType rmg_journal_get_service_action (RmgJournal *journal,
+                                              const gchar *service_name,
+                                              GError **error);
+/**
+ * @brief Remove service
+ *
+ * @param journal Pointer to the journal object
+ * @param service_name The service name to lookup
+ * @param error The GError object or NULL
+ *
+ * @return On success return RMG_STATUS_OK
+ */
+RmgStatus rmg_journal_remove_service (RmgJournal *journal,
+                                      const gchar *service_name,
+                                      GError **error);
+
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgJournal, rmg_journal_unref);
 
 G_END_DECLS
