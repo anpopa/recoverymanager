@@ -1,4 +1,4 @@
-/* rmg-sentry.h
+/* rmg-jentry.h
  *
  * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
  *
@@ -48,10 +48,10 @@ typedef struct _RmgAEntry {
 } RmgAEntry;
 
 /**
- * @struct RmgSEntry
- * @brief The RmgSEntry opaque data structure
+ * @struct RmgJEntry
+ * @brief The RmgJEntry opaque data structure
  */
-typedef struct _RmgSEntry {
+typedef struct _RmgJEntry {
   gulong hash;
   gchar *name;
   gchar *private_data;
@@ -64,104 +64,104 @@ typedef struct _RmgSEntry {
   GRand *hash_generator;
   const gchar *parser_current_element;
   grefcount rc;     /**< Reference counter variable  */
-} RmgSEntry;
+} RmgJEntry;
 
-#define RMG_SENTRY_TO_PTR(e) ((gpointer)(RmgSEntry *)(e))
+#define RMG_JENTRY_TO_PTR(e) ((gpointer)(RmgJEntry *)(e))
 #define RMG_AENTRY_TO_PTR(a) ((gpointer)(RmgAEntry *)(a))
 
 /*
- * @brief Create a new sentry object
- * @return On success return a new RmgSEntry object otherwise return NULL
+ * @brief Create a new jentry object
+ * @return On success return a new RmgJEntry object otherwise return NULL
  */
-RmgSEntry *rmg_sentry_new (gulong version);
+RmgJEntry *rmg_jentry_new (gulong version);
 
 /**
- * @brief Aquire sentry object
- * @param sentry Pointer to the sentry object
+ * @brief Aquire jentry object
+ * @param jentry Pointer to the jentry object
  */
-RmgSEntry *rmg_sentry_ref (RmgSEntry *sentry);
+RmgJEntry *rmg_jentry_ref (RmgJEntry *jentry);
 
 /**
- * @brief Release sentry object
- * @param sentry Pointer to the sentry object
+ * @brief Release jentry object
+ * @param jentry Pointer to the jentry object
  */
-void rmg_sentry_unref (RmgSEntry *sentry);
-
-/**
- * @brief Setter
- */
-void rmg_sentry_set_name (RmgSEntry *sentry, const gchar *name);
+void rmg_jentry_unref (RmgJEntry *jentry);
 
 /**
  * @brief Setter
  */
-void rmg_sentry_set_private_data_path (RmgSEntry *sentry, const gchar *dpath);
+void rmg_jentry_set_name (RmgJEntry *jentry, const gchar *name);
 
 /**
  * @brief Setter
  */
-void rmg_sentry_set_public_data_path (RmgSEntry *sentry, const gchar *dpath);
+void rmg_jentry_set_private_data_path (RmgJEntry *jentry, const gchar *dpath);
 
 /**
  * @brief Setter
  */
-void rmg_sentry_set_rvector (RmgSEntry *sentry, glong rvector);
+void rmg_jentry_set_public_data_path (RmgJEntry *jentry, const gchar *dpath);
 
 /**
  * @brief Setter
  */
-void rmg_sentry_set_relaxing (RmgSEntry *sentry, gboolean relaxing);
+void rmg_jentry_set_rvector (RmgJEntry *jentry, glong rvector);
 
 /**
  * @brief Setter
  */
-void rmg_sentry_set_timeout (RmgSEntry *sentry, glong timeout);
+void rmg_jentry_set_relaxing (RmgJEntry *jentry, gboolean relaxing);
 
 /**
  * @brief Setter
  */
-void rmg_sentry_add_action (RmgSEntry *sentry, RmgActionType type, glong trigger_level_min, glong trigger_level_max);
+void rmg_jentry_set_timeout (RmgJEntry *jentry, glong timeout);
+
+/**
+ * @brief Setter
+ */
+void rmg_jentry_add_action (RmgJEntry *jentry, RmgActionType type, glong trigger_level_min, glong trigger_level_max);
 
 /**
  * @brief Getter
  */
-gulong rmg_sentry_get_hash (RmgSEntry *sentry);
+gulong rmg_jentry_get_hash (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-const gchar *rmg_sentry_get_name (RmgSEntry *sentry);
+const gchar *rmg_jentry_get_name (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-const gchar *rmg_sentry_get_private_data_path (RmgSEntry *sentry);
+const gchar *rmg_jentry_get_private_data_path (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-const gchar *rmg_sentry_get_public_data_path (RmgSEntry *sentry);
+const gchar *rmg_jentry_get_public_data_path (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-glong rmg_sentry_get_rvector (RmgSEntry *sentry);
+glong rmg_jentry_get_rvector (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-gboolean rmg_sentry_get_relaxing (RmgSEntry *sentry);
+gboolean rmg_jentry_get_relaxing (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-glong rmg_sentry_get_timeout (RmgSEntry *sentry);
+glong rmg_jentry_get_timeout (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-const GList *rmg_sentry_get_actions (RmgSEntry *sentry);
+const GList *rmg_jentry_get_actions (RmgJEntry *jentry);
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgSEntry, rmg_sentry_unref);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgJEntry, rmg_jentry_unref);
 
 G_END_DECLS

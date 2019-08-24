@@ -29,62 +29,10 @@
 
 #include "rmg-monitor.h"
 
-const gchar *active_state_names[] = {
-    "unknown",
-    "active",
-    "reloading",
-    "inactive",
-    "failed",
-    "activating",
-    "deactivating",
-    NULL
-};
-
-const gchar *active_substate_names[] = {
-    "unknown",
-    "running",
-    "dead",
-    "inactive",
-    "stop-sigterm",
-    NULL
-};
-
 const gchar *sd_dbus_name = "org.freedesktop.systemd1";
 const gchar *sd_dbus_object_path = "/org/freedesktop/systemd1";
 const gchar *sd_dbus_interface_unit = "org.freedesktop.systemd1.Unit";
 const gchar *sd_dbus_interface_manager = "org.freedesktop.systemd1.Manager";
-
-ServiceActiveState
-rmg_monitor_active_state_from (const gchar *state_name)
-{
-  gint i = 0;
-
-  while (active_state_names[i] != NULL)
-    {
-      if (g_strcmp0 (active_state_names[i], state_name) == 0)
-        return (ServiceActiveState)i;
-
-      i++:
-    }
-
-  return SERVICE_STATE_UNKNOWN;
-}
-
-ServiceActiveSubstate
-rmg_monitor_active_substate_from (const gchar *substate_name)
-{
-  gint i = 0;
-
-  while (active_substate_names[i] != NULL)
-    {
-      if (g_strcmp0 (active_substate_names[i], substate_name) == 0)
-        return (ServiceActiveSubstate)i;
-
-      i++:
-    }
-
-  return SERVICE_SUBSTATE_UNKNOWN;
-}
 
 RmgMonitor *
 rmg_monitor_new (RmgDispatcher *dispatcher, GError **error)

@@ -37,35 +37,6 @@
 
 G_BEGIN_DECLS
 
-typedef enum _ServiceActiveState {
-    SERVICE_STATE_UNKNOWN,
-    SERVICE_STATE_ACTIVE,
-    SERVICE_STATE_RELOADING,
-    SERVICE_STATE_INACTIVE,
-    SERVICE_STATE_FAILED,
-    SERVICE_STATE_ACTIVATING,
-    SERVICE_STATE_DEACTIVATING
-} ServiceActiveState;
-
-typedef enum _ServiceActiveSubstate {
-    SERVICE_SUBSTATE_UNKNOWN,
-    SERVICE_SUBSTATE_RUNNING,
-    SERVICE_SUBSTATE_DEAD,
-    SERVICE_SUBSTATE_STOP_SIGTERM
-} ServiceActiveSubstate;
-
-/**
- * @struct Service entry
- * @brief Reprezentation of a service with state from systemd
- */
-typedef struct _MonitorServiceEntry {
-  GDBusProxy *proxy;
-  gchar *service_name;
-  gchar *object_path;
-  ServiceActiveState active_state;
-  ServiceActiveSubstate active_substate;
-} MonitorServiceEntry;
-
 /**
  * @struct RmgMonitor
  * @brief The RmgMonitor opaque data structure

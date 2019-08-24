@@ -28,7 +28,7 @@
  */
 
 #include "rmg-journal.h"
-#include "rmg-sentry.h"
+#include "rmg-jentry.h"
 #include "rmg-defaults.h"
 #include "rmg-utils.h"
 
@@ -64,7 +64,7 @@ typedef struct _JournalQueryData {
  */
 typedef struct _JournalAddAction {
   RmgJournal *journal;
-  RmgSEntry  *service;
+  RmgJEntry  *service;
 } JournalAddAction;
 
 const gchar *rmg_table_services = "Services";
@@ -301,7 +301,7 @@ parser_start_element (GMarkupParseContext *context,
                       gpointer user_data,
                       GError             **error)
 {
-  RmgSEntry *entry = (RmgSEntry *)user_data;
+  RmgJEntry *entry = (RmgJEntry *)user_data;
 
   entry->parser_current_element = element_name;
 
@@ -333,10 +333,10 @@ parser_start_element (GMarkupParseContext *context,
         }
       else
         {
-          glong g = rmg_sentry_get_rvector (entry) + retry;
+          glong g = rmg_jentry_get_rvector (entry) + retry;
 
-          rmg_sentry_add_action (entry, action_type, rmg_sentry_get_rvector (entry), g);
-          rmg_sentry_set_rvector (entry, g);
+          rmg_jentry_add_action (entry, action_type, rmg_jentry_get_rvector (entry), g);
+          rmg_jentry_set_rvector (entry, g);
         }
     }
 }
@@ -348,7 +348,7 @@ parser_text_data (GMarkupParseContext *context,
                   gpointer user_data,
                   GError             **error)
 {
-  RmgSEntry *entry = (RmgSEntry *)user_data;
+  RmgJEntry *entry = (RmgJEntry *)user_data;
   g_autofree gchar *buffer = g_new0 (gchar, text_len + 1);
 
   RMG_UNUSED (context);
@@ -357,13 +357,13 @@ parser_text_data (GMarkupParseContext *context,
   memcpy (buffer, text, text_len);
 
   if (g_strcmp0 (entry->parser_current_element, "service") == 0)
-    rmg_sentry_set_name (entry, buffer);
+    rmg_jentry_set_name (entry, buffer);
   else if (g_strcmp0 (entry->parser_current_element, "relaxtime") == 0)
-    rmg_sentry_set_timeout (entry, g_ascii_strtoll (buffer, NULL, 10));
+    rmg_jentry_set_timeout (entry, g_ascii_strtoll (buffer, NULL, 10));
   else if (g_strcmp0 (entry->parser_current_element, "privatedata") == 0)
-    rmg_sentry_set_private_data_path (entry, buffer);
+    rmg_jentry_set_private_data_path (entry, buffer);
   else if (g_strcmp0 (entry->parser_current_element, "publicdata") == 0)
-    rmg_sentry_set_public_data_path (entry, buffer);
+    rmg_jentry_set_public_data_path (entry, buffer);
 }
 
 static void
@@ -411,7 +411,7 @@ rmg_journal_reload_units (RmgJournal *journal, GError **error)
 
   while ((nfile = g_dir_read_name (gdir)) != NULL)
     {
-      g_autoptr (RmgSEntry) service_entry = NULL;
+      g_autoptr (RmgJEntry) jentry = NULL;
       g_autoptr (GMarkupParseContext) parser_context = NULL;
       g_autoptr (GError) element_error = NULL;
       g_autofree gchar *fpath = NULL;
@@ -426,8 +426,8 @@ rmg_journal_reload_units (RmgJournal *journal, GError **error)
         }
 
       hash = rmg_utils_jenkins_hash (fdata);
-      service_entry = rmg_sentry_new (hash);
-      parser_context = g_markup_parse_context_new (&markup_parser, 0, service_entry, NULL);
+      jentry = rmg_jentry_new (hash);
+      parser_context = g_markup_parse_context_new (&markup_parser, 0, jentry, NULL);
 
       if (!g_markup_parse_context_parse (parser_context, fdata, (gssize)strlen (fdata), &element_error))
         {
@@ -435,40 +435,40 @@ rmg_journal_reload_units (RmgJournal *journal, GError **error)
         }
       else
         {
-          gulong exist_hash = rmg_journal_get_hash (journal, service_entry->name, NULL);
+          gulong exist_hash = rmg_journal_get_hash (journal, jentry->name, NULL);
 
           if (hash == exist_hash)
             {
-              g_debug ("Service %s parsed and version already in database", service_entry->name);
+              g_debug ("Service %s parsed and version already in database", jentry->name);
               continue;
             }
 
           if (rmg_journal_remove_service (journal,
-                                          service_entry->name,
+                                          jentry->name,
                                           &element_error)
               != RMG_STATUS_OK)
             {
-              g_warning ("Fail to remove existent service entry %s", service_entry->name);
+              g_warning ("Fail to remove existent service entry %s", jentry->name);
               continue;
             }
 
-          g_info ("Adding service='%s' as new entry in database", service_entry->name);
+          g_info ("Adding service='%s' as new entry in database", jentry->name);
 
           if (rmg_journal_add_service (journal,
                                        hash,
-                                       service_entry->name,
-                                       service_entry->private_data,
-                                       service_entry->public_data,
-                                       service_entry->timeout,
+                                       jentry->name,
+                                       jentry->private_data,
+                                       jentry->public_data,
+                                       jentry->timeout,
                                        &element_error)
               == RMG_STATUS_OK)
             {
               JournalAddAction addhelper = {
                 .journal = journal,
-                .service = service_entry
+                .service = jentry
               };
 
-              g_list_foreach (service_entry->actions, add_action_for_service, &addhelper);
+              g_list_foreach (jentry->actions, add_action_for_service, &addhelper);
             }
           else
             {
