@@ -72,8 +72,8 @@ on_properties_changed (GDBusProxy          *proxy,
 
   if (g_variant_n_children (changed_properties) > 0)
     {
-      g_autofree gchar *active_state_str = NULL;
-      g_autofree gchar *active_substate_str = NULL;
+      const gchar *active_state_str = NULL;
+      const gchar *active_substate_str = NULL;
       DispatcherEventType dispatcher_event = DISPATCHER_EVENT_UNKNOWN;
       ServiceActiveState active_state = SERVICE_STATE_UNKNOWN;
       ServiceActiveSubstate active_substate = SERVICE_SUBSTATE_UNKNOWN;
@@ -88,9 +88,9 @@ on_properties_changed (GDBusProxy          *proxy,
       while (g_variant_iter_loop (iter, "{&sv}", &key, &value))
         {
           if (g_strcmp0 (key, "ActiveState") == 0)
-            active_state_str = g_variant_print (value, TRUE);
+            active_state_str = g_variant_get_type_string (value);
           else if (g_strcmp0 (key, "SubState") == 0)
-            active_substate_str = g_variant_print (value, TRUE);
+            active_substate_str = g_variant_get_type_string (value);
         }
 
       if ((active_state_str == NULL) || (active_substate_str == NULL))

@@ -107,10 +107,11 @@ rmg_application_new (const gchar *config, GError **error)
   if (*error != NULL)
     return app;
 
-  /* construct dispatcher and return if an error is set */
-  app->monitor = rmg_monitor_new (app->dispatcher, error);
-  if (*error != NULL)
-    return app;
+  /* construct monitor */
+  app->monitor = rmg_monitor_new (app->dispatcher);
+
+  rmg_monitor_build_proxy (app->monitor);
+  rmg_monitor_read_services (app->monitor);
 
   /* construct mainloop noexept */
   app->mainloop = g_main_loop_new (NULL, TRUE);

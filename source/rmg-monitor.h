@@ -38,10 +38,32 @@
 G_BEGIN_DECLS
 
 /**
+ * @enum monitor_event_data
+ * @brief Monitor event data type
+ */
+typedef enum _MonitorEventType {
+  MONITOR_EVENT_BUILD_PROXY,
+  MONITOR_EVENT_READ_SERVICES
+} MonitorEventType;
+
+typedef gboolean (*RmgMonitorCallback) (gpointer _monitor, gpointer _event);
+
+/**
+ * @struct RmgMonitorEvent
+ * @brief The file transfer event
+ */
+typedef struct _RmgMonitorEvent {
+  MonitorEventType type;     /**< The event type the element holds */
+} RmgMonitorEvent;
+
+/**
  * @struct RmgMonitor
  * @brief The RmgMonitor opaque data structure
  */
 typedef struct _RmgMonitor {
+  GSource source;  /**< Event loop source */
+  GAsyncQueue    *queue;  /**< Async queue */
+  RmgMonitorCallback callback; /**< Callback function */
   RmgDispatcher *dispatcher;
   grefcount rc;     /**< Reference counter variable  */
   GList *services;
@@ -52,7 +74,7 @@ typedef struct _RmgMonitor {
  * @brief Create a new monitor object
  * @return On success return a new RmgMonitor object otherwise return NULL
  */
-RmgMonitor *rmg_monitor_new (RmgDispatcher *dispatcher, GError **error);
+RmgMonitor *rmg_monitor_new (RmgDispatcher *dispatcher);
 
 /**
  * @brief Aquire monitor object
@@ -65,6 +87,18 @@ RmgMonitor *rmg_monitor_ref (RmgMonitor *monitor);
  * @param c Pointer to the monitor object
  */
 void rmg_monitor_unref (RmgMonitor *monitor);
+
+/**
+ * @brief Build DBus proxy
+ * @param monitor Pointer to the monitor object
+ */
+void rmg_monitor_build_proxy (RmgMonitor *monitor);
+
+/**
+ * @brief Get existing services
+ * @param monitor Pointer to the monitor object
+ */
+void rmg_monitor_read_services (RmgMonitor *monitor);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgMonitor, rmg_monitor_unref);
 
