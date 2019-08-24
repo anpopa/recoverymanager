@@ -29,6 +29,7 @@
 
 #include "rmg-server.h"
 #include "rmg-client.h"
+#include "rmg-dispatcher.h"
 
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -157,7 +158,7 @@ rmg_server_new (RmgOptions *options,
   g_ref_count_init (&server->rc);
 
   server->options = rmg_options_ref (options);
-  server->dispatcher = dispatcher;
+  server->dispatcher = rmg_dispatcher_ref ((RmgDispatcher *)dispatcher);
 
   server->sockfd = socket (AF_UNIX, SOCK_STREAM, 0);
   if (server->sockfd < 0)
@@ -201,7 +202,12 @@ rmg_server_unref (RmgServer *server)
 
   if (g_ref_count_dec (&server->rc) == TRUE)
     {
-      rmg_options_unref (server->options);
+      if (server->options != NULL)
+        rmg_options_unref (server->options);
+
+      if (server->dispatcher != NULL)
+        rmg_dispatcher_unref ((RmgDispatcher *)server->dispatcher);
+
       g_source_unref (RMG_EVENT_SOURCE (server));
     }
 }

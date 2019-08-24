@@ -47,7 +47,7 @@ typedef struct _RmgServer {
   gpointer tag;     /**< Unix server socket tag  */
   gint sockfd;      /**< Module file descriptor (server listen fd) */
   RmgOptions *options; /**< Own reference to global options */
-  gpointer *dispatcher; /**< A pointer to dispatcher. Not owned and optional */
+  gpointer dispatcher; /**< A pointer to dispatcher. Not owned and optional */
 } RmgServer;
 
 /*

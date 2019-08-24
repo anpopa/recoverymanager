@@ -214,6 +214,9 @@ rmg_mentry_unref (RmgMEntry *mentry)
       if (mentry->proxy != NULL)
         g_object_unref (mentry->proxy);
 
+      if (mentry->dispatcher != NULL)
+        rmg_dispatcher_unref ((RmgDispatcher *)mentry->dispatcher);
+
       g_free (mentry);
     }
 }
@@ -226,7 +229,7 @@ rmg_mentry_build_proxy (RmgMEntry *mentry, gpointer _dispatcher)
   g_assert (mentry);
   g_assert (_dispatcher);
 
-  mentry->dispatcher = _dispatcher;
+  mentry->dispatcher = rmg_dispatcher_ref ((RmgDispatcher *)_dispatcher);
   mentry->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
                                                  G_DBUS_PROXY_FLAGS_NONE,
                                                  NULL, /* GDBusInterfaceInfo */

@@ -28,6 +28,7 @@
  */
 
 #include "rmg-client.h"
+#include "rmg-dispatcher.h"
 #include "rmg-utils.h"
 
 #include <sys/types.h>
@@ -180,7 +181,7 @@ rmg_client_new (gint clientfd,
   g_ref_count_init (&client->rc);
 
   client->sockfd = clientfd;
-  client->dispatcher = dispatcher;
+  client->dispatcher = rmg_dispatcher_ref ((RmgDispatcher *)dispatcher);
 
   g_source_set_callback (RMG_EVENT_SOURCE (client),
                          G_SOURCE_FUNC (client_source_callback),
@@ -210,6 +211,9 @@ rmg_client_unref (RmgClient *client)
 
   if (g_ref_count_dec (&client->rc) == TRUE)
     {
+      if (client->dispatcher != NULL)
+        rmg_dispatcher_unref ((RmgDispatcher *)client->dispatcher);
+
       g_source_unref (RMG_EVENT_SOURCE (client));
     }
 }
