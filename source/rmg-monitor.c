@@ -29,140 +29,67 @@
 
 #include "rmg-monitor.h"
 
-/**
- * @brief Post new event
- *
- * @param monitor A pointer to the monitor object
- * @param type The type of the new event to be posted
- * @param service_name The service name having this event
- */
-static void post_monitor_event (RmgMonitor *monitor, MonitorEventType type, const gchar *service_name);
-
-/**
- * @brief GSource prepare function
- */
-static gboolean monitor_source_prepare (GSource *source, gint *timeout);
-
-/**
- * @brief GSource dispatch function
- */
-static gboolean monitor_source_dispatch (GSource *source, GSourceFunc callback, gpointer _monitor);
-
-/**
- * @brief GSource callback function
- */
-static gboolean monitor_source_callback (gpointer _monitor, gpointer _event);
-
-/**
- * @brief GSource destroy notification callback function
- */
-static void monitor_source_destroy_notify (gpointer _monitor);
-
-/**
- * @brief Async queue destroy notification callback function
- */
-static void monitor_queue_destroy_notify (gpointer _monitor);
-
-/**
- * @brief GSourceFuncs vtable
- */
-static GSourceFuncs monitor_source_funcs =
-{
-  monitor_source_prepare,
-  NULL,
-  monitor_source_dispatch,
-  NULL,
-  NULL,
-  NULL,
+const gchar *active_state_names[] = {
+    "unknown",
+    "active",
+    "reloading",
+    "inactive",
+    "failed",
+    "activating",
+    "deactivating",
+    NULL
 };
 
-static void
-post_monitor_event (RmgMonitor *monitor,
-                    MonitorEventType type,
-                    const gchar *service_name)
+const gchar *active_substate_names[] = {
+    "unknown",
+    "running",
+    "dead",
+    "inactive",
+    "stop-sigterm",
+    NULL
+};
+
+const gchar *sd_dbus_name = "org.freedesktop.systemd1";
+const gchar *sd_dbus_object_path = "/org/freedesktop/systemd1";
+const gchar *sd_dbus_interface_unit = "org.freedesktop.systemd1.Unit";
+const gchar *sd_dbus_interface_manager = "org.freedesktop.systemd1.Manager";
+
+ServiceActiveState
+rmg_monitor_active_state_from (const gchar *state_name)
 {
-  RmgMonitorEvent *e = NULL;
+  gint i = 0;
 
-  g_assert (monitor);
-  g_assert (service_name);
+  while (active_state_names[i] != NULL)
+    {
+      if (g_strcmp0 (active_state_names[i], state_name) == 0)
+        return (ServiceActiveState)i;
 
-  e = g_new0 (RmgMonitorEvent, 1);
+      i++:
+    }
 
-  e->type = type;
-  e->service_name = g_strdup (service_name);
-
-  g_async_queue_push (monitor->queue, e);
+  return SERVICE_STATE_UNKNOWN;
 }
 
-static gboolean
-monitor_source_prepare (GSource *source,
-                        gint *timeout)
+ServiceActiveSubstate
+rmg_monitor_active_substate_from (const gchar *substate_name)
 {
-  RmgMonitor *monitor = (RmgMonitor *)source;
+  gint i = 0;
 
-  RMG_UNUSED (timeout);
+  while (active_substate_names[i] != NULL)
+    {
+      if (g_strcmp0 (active_substate_names[i], substate_name) == 0)
+        return (ServiceActiveSubstate)i;
 
-  return(g_async_queue_length (monitor->queue) > 0);
-}
+      i++:
+    }
 
-static gboolean
-monitor_source_dispatch (GSource *source,
-                         GSourceFunc callback,
-                         gpointer _monitor)
-{
-  RmgMonitor *monitor = (RmgMonitor *)source;
-  gpointer event = g_async_queue_try_pop (monitor->queue);
-
-  RMG_UNUSED (callback);
-  RMG_UNUSED (_monitor);
-
-  if (event == NULL)
-    return G_SOURCE_CONTINUE;
-
-  return monitor->callback (monitor, event) == TRUE ? G_SOURCE_CONTINUE : G_SOURCE_REMOVE;
-}
-
-static gboolean
-monitor_source_callback (gpointer _monitor,
-                         gpointer _event)
-{
-  RmgMonitor *monitor = (RmgMonitor *)_monitor;
-  RmgMonitorEvent *event = (RmgMonitorEvent *)_event;
-
-  g_assert (monitor);
-  g_assert (event);
-
-
-  /* TODO: Process the event */
-
-  g_free (event->service_name);
-  g_free (event);
-
-  return TRUE;
-}
-
-static void
-monitor_source_destroy_notify (gpointer _monitor)
-{
-  RmgMonitor *monitor = (RmgMonitor *)_monitor;
-
-  g_assert (monitor);
-  g_debug ("Monitor destroy notification");
-
-  rmg_monitor_unref (monitor);
-}
-
-static void
-monitor_queue_destroy_notify (gpointer _monitor)
-{
-  RMG_UNUSED (_monitor);
-  g_debug ("Monitor queue destroy notification");
+  return SERVICE_SUBSTATE_UNKNOWN;
 }
 
 RmgMonitor *
 rmg_monitor_new (RmgDispatcher *dispatcher, GError **error)
 {
-  RmgMonitor *monitor = (RmgMonitor *)g_source_new (&monitor_source_funcs, sizeof(RmgMonitor));
+  RmgMonitor *monitor = g_new0 (RmgMonitor, 1);
 
   g_assert (monitor);
   g_assert (dispatcher);
@@ -174,13 +101,6 @@ rmg_monitor_new (RmgDispatcher *dispatcher, GError **error)
 
   /* no error is set and no error should be set after this point */
   monitor->dispatcher = rmg_dispatcher_ref (dispatcher);
-  monitor->queue = g_async_queue_new_full (monitor_queue_destroy_notify);
-
-  g_source_set_callback (RMG_EVENT_SOURCE (monitor),
-                         NULL,
-                         monitor,
-                         monitor_source_destroy_notify);
-  g_source_attach (RMG_EVENT_SOURCE (monitor), NULL);
 
   return monitor;
 }
@@ -203,7 +123,6 @@ rmg_monitor_unref (RmgMonitor *monitor)
       if (monitor->dispatcher != NULL)
         rmg_dispatcher_unref (monitor->dispatcher);
 
-      g_async_queue_unref (monitor->queue);
       g_source_unref (RMG_EVENT_SOURCE (monitor));
     }
 }

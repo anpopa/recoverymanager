@@ -33,43 +33,48 @@
 #include "rmg-types.h"
 
 #include <glib.h>
+#include <gio.h>
 
 G_BEGIN_DECLS
 
-/**
- * @enum monitor_event_data
- * @brief Monitor event data type
- */
-typedef enum _MonitorEventType {
-  MONITOR_EVENT_SERVICE_UPDATE,
-  MONITOR_EVENT_SERVICE_RELAXED
-} MonitorEventType;
+typedef enum _ServiceActiveState {
+    SERVICE_STATE_UNKNOWN,
+    SERVICE_STATE_ACTIVE,
+    SERVICE_STATE_RELOADING,
+    SERVICE_STATE_INACTIVE,
+    SERVICE_STATE_FAILED,
+    SERVICE_STATE_ACTIVATING,
+    SERVICE_STATE_DEACTIVATING
+} ServiceActiveState;
+
+typedef enum _ServiceActiveSubstate {
+    SERVICE_SUBSTATE_UNKNOWN,
+    SERVICE_SUBSTATE_RUNNING,
+    SERVICE_SUBSTATE_DEAD,
+    SERVICE_SUBSTATE_STOP_SIGTERM
+} ServiceActiveSubstate;
 
 /**
- * @function RmgMonitorCallback
- * @brief Custom callback used internally by RmgMonitor as source callback
+ * @struct Service entry
+ * @brief Reprezentation of a service with state from systemd
  */
-typedef gboolean (*RmgMonitorCallback) (gpointer _monitor, gpointer _event);
-
-/**
- * @struct RmgMonitorEvent
- * @brief The file transfer event
- */
-typedef struct _RmgMonitorEvent {
-  MonitorEventType type;     /**< The event type the element holds */
-  gchar *service_name;     /**< Service name for the event */
-} RmgMonitorEvent;
+typedef struct _MonitorServiceEntry {
+  GDBusProxy *proxy;
+  gchar *service_name;
+  gchar *object_path;
+  ServiceActiveState active_state;
+  ServiceActiveSubstate active_substate;
+} MonitorServiceEntry;
 
 /**
  * @struct RmgMonitor
  * @brief The RmgMonitor opaque data structure
  */
 typedef struct _RmgMonitor {
-  GSource source;  /**< Event loop source */
-  GAsyncQueue    *queue;  /**< Async queue */
-  RmgMonitorCallback callback; /**< Callback function */
   RmgDispatcher *dispatcher;
   grefcount rc;     /**< Reference counter variable  */
+  GList *services;
+  GDBusProxy *proxy;
 } RmgMonitor;
 
 /*
