@@ -33,7 +33,7 @@
 #include "rmg-types.h"
 
 #include <glib.h>
-#include <gio.h>
+#include <gio/gio.h>
 
 G_BEGIN_DECLS
 

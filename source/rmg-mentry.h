@@ -32,7 +32,7 @@
 #include "rmg-types.h"
 
 #include <glib.h>
-#include <gio.h>
+#include <gio/gio.h>
 
 G_BEGIN_DECLS
 
@@ -58,6 +58,7 @@ typedef enum _ServiceActiveSubstate {
  * @brief Reprezentation of a service with state from systemd
  */
 typedef struct _RmgMEntry {
+  grefcount rc;     /**< Reference counter variable  */
   GDBusProxy *proxy;
   gpointer dispatcher;
   gchar *service_name;

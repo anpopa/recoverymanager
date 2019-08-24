@@ -28,6 +28,7 @@
  */
 
 #include "rmg-mentry.h"
+#include "rmg-dispatcher.h"
 
 const gchar *active_state_names[] = {
   "unknown",
@@ -71,8 +72,11 @@ on_properties_changed (GDBusProxy          *proxy,
 
   if (g_variant_n_children (changed_properties) > 0)
     {
-      g_autofree gchar *new_active_state = NULL;
-      g_autofree gchar *new_sub_state = NULL;
+      g_autofree gchar *active_state_str = NULL;
+      g_autofree gchar *active_substate_str = NULL;
+      DispatcherEventType dispatcher_event = DISPATCHER_EVENT_UNKNOWN;
+      ServiceActiveState active_state = SERVICE_STATE_UNKNOWN;
+      ServiceActiveSubstate active_substate = SERVICE_SUBSTATE_UNKNOWN;
       GVariantIter *iter;
       const gchar *key;
       GVariant *value;
@@ -84,21 +88,45 @@ on_properties_changed (GDBusProxy          *proxy,
       while (g_variant_iter_loop (iter, "{&sv}", &key, &value))
         {
           if (g_strcmp0 (key, "ActiveState") == 0)
-            new_active_state = g_variant_print (value, TRUE);
+            active_state_str = g_variant_print (value, TRUE);
           else if (g_strcmp0 (key, "SubState") == 0)
-            new_sub_state = g_variant_print (value, TRUE);
+            active_substate_str = g_variant_print (value, TRUE);
         }
 
-      if (mentry->active_state != rmg_mentry_active_state_from (new_active_state)
-          || mentry->active_substate != rmg_mentry_active_substate_from (new_sub_state))
+      if ((active_state_str == NULL) || (active_substate_str == NULL))
         {
-          mentry->active_state = rmg_mentry_active_state_from (new_active_state);
-          mentry->active_substate = rmg_mentry_active_substate_from (new_sub_state);
+          g_warning ("Cannot read current active state or substate");
+          g_return_if_reached ();
+        }
 
+      active_state = rmg_mentry_active_state_from (active_state_str);
+      active_substate = rmg_mentry_active_substate_from (active_substate_str);
+
+      if ((mentry->active_state != active_state)
+          || mentry->active_substate != active_substate)
+        {
           g_info ("Service '%s' state change to ActiveState='%s' SubState='%s'",
                   mentry->service_name,
-                  new_active_state,
-                  new_sub_state);
+                  active_state_str,
+                  active_substate_str);
+
+          if ((mentry->active_state == SERVICE_STATE_ACTIVE)
+              && (active_state == SERVICE_STATE_INACTIVE))
+            {
+              dispatcher_event = DISPATCHER_EVENT_SERVICE_INACTIVE;
+            }
+          else
+            {
+              dispatcher_event = DISPATCHER_EVENT_SERVICE_ACTIVE;
+            }
+
+          mentry->active_state = active_state;
+          mentry->active_substate = active_substate;
+
+          rmg_dispatcher_push_service_event ((RmgDispatcher *)mentry->dispatcher,
+                                             dispatcher_event,
+                                             mentry->service_name,
+                                             mentry->object_path);
         }
 
       g_variant_iter_free (iter);
@@ -150,7 +178,7 @@ rmg_mentry_get_active_substate (ServiceActiveSubstate state)
 }
 
 RmgMEntry *
-rmg_mentry_new (const gchar *service_name, const gchar *object_path);
+rmg_mentry_new (const gchar *service_name, const gchar *object_path)
 {
   RmgMEntry *mentry = g_new0 (RmgMEntry, 1);
 

@@ -84,6 +84,7 @@ endif
 
 
 dep_glib = dependency('glib-2.0', version : '>=2.58')
+dep_gio = dependency('gio-2.0', version : '>=2.58')
 dep_sqlite = dependency('sqlite3')
 
 recoverymanagerhost_sources = [
@@ -100,12 +101,14 @@ recoverymanagerhost_sources = [
   'source/rmg-manager.c',
   'source/rmg-monitor.c',
   'source/rmg-executor.c',
-  'source/rmg-sentry.c',
+  'source/rmg-jentry.c',
+  'source/rmg-mentry.c',
   'source/rmg-application.c',
   ]
 
 recoverymanagerhost_deps = [
   dep_glib,
+  dep_gio,
   dep_lxc,
   dep_systemd,
   dep_sqlite,

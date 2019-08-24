@@ -36,7 +36,10 @@
  * @param type The type of the new event to be posted
  * @param service_name The service name having this event
  */
-static void post_dispatcher_event (RmgDispatcher *dispatcher, DispatcherEventType type, const gchar *service_name);
+static void post_dispatcher_event (RmgDispatcher *dispatcher,
+                                   DispatcherEventType type,
+                                   const gchar *service_name,
+                                   const gchar *object_path);
 
 /**
  * @brief GSource prepare function
@@ -79,7 +82,8 @@ static GSourceFuncs dispatcher_source_funcs =
 static void
 post_dispatcher_event (RmgDispatcher *dispatcher,
                        DispatcherEventType type,
-                       const gchar *service_name)
+                       const gchar *service_name,
+                       const gchar *object_path)
 {
   RmgDispatcherEvent *e = NULL;
 
@@ -90,6 +94,7 @@ post_dispatcher_event (RmgDispatcher *dispatcher,
 
   e->type = type;
   e->service_name = g_strdup (service_name);
+  e->object_path = g_strdup (object_path);
 
   g_async_queue_push (dispatcher->queue, e);
 }
@@ -132,10 +137,22 @@ dispatcher_source_callback (gpointer _dispatcher,
   g_assert (dispatcher);
   g_assert (event);
 
+  switch (event->type)
+    {
+    case DISPATCHER_EVENT_SERVICE_INACTIVE:
+      g_info ("Service '%s' crashed", event->service_name);
+      break;
 
-  /* TODO: Process the event */
+    case DISPATCHER_EVENT_SERVICE_ACTIVE:
+      g_info ("Service '%s' (re)started", event->service_name);
+      break;
+
+    default:
+      break;
+    }
 
   g_free (event->service_name);
+  g_free (event->object_path);
   g_free (event);
 
   return TRUE;
@@ -274,4 +291,13 @@ rmg_dispatcher_unref (RmgDispatcher *dispatcher)
       g_async_queue_unref (dispatcher->queue);
       g_source_unref (RMG_EVENT_SOURCE (dispatcher));
     }
+}
+
+void
+rmg_dispatcher_push_service_event (RmgDispatcher *dispatcher,
+                                   DispatcherEventType type,
+                                   const gchar *service_name,
+                                   const gchar *object_path)
+{
+  post_dispatcher_event (dispatcher, type, service_name, object_path);
 }

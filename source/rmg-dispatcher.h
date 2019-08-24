@@ -45,7 +45,9 @@ G_BEGIN_DECLS
  * @brief Dispatcher event data type
  */
 typedef enum _DispatcherEventType {
-  DISPATCHER_EVENT_SERVICE_UPDATE,
+  DISPATCHER_EVENT_UNKNOWN,
+  DISPATCHER_EVENT_SERVICE_INACTIVE,
+  DISPATCHER_EVENT_SERVICE_ACTIVE,
   DISPATCHER_EVENT_SERVICE_RELAXED
 } DispatcherEventType;
 
@@ -62,6 +64,7 @@ typedef gboolean (*RmgDispatcherCallback) (gpointer _dispatcher, gpointer _event
 typedef struct _RmgDispatcherEvent {
   DispatcherEventType type;     /**< The event type the element holds */
   gchar *service_name;     /**< Service name for the event */
+  gchar *object_path;     /**< Service object path */
 } RmgDispatcherEvent;
 /**
  * @struct RmgDispatcher
@@ -83,7 +86,10 @@ typedef struct _RmgDispatcher {
  * @brief Create a new dispatcher object
  * @return On success return a new RmgDispatcher object otherwise return NULL
  */
-RmgDispatcher *rmg_dispatcher_new (RmgOptions *options, RmgJournal *journal, RmgExecutor *executor, GError **error);
+RmgDispatcher *rmg_dispatcher_new (RmgOptions *options,
+                                   RmgJournal *journal,
+                                   RmgExecutor *executor,
+                                   GError **error);
 
 /**
  * @brief Aquire dispatcher object
@@ -96,6 +102,15 @@ RmgDispatcher *rmg_dispatcher_ref (RmgDispatcher *dispatcher);
  * @param c Pointer to the dispatcher object
  */
 void rmg_dispatcher_unref (RmgDispatcher *dispatcher);
+
+/**
+ * @brief Push a service event
+ * @param c Pointer to the dispatcher object
+ */
+void rmg_dispatcher_push_service_event (RmgDispatcher *dispatcher,
+                                        DispatcherEventType type,
+                                        const gchar *service_name,
+                                        const gchar *object_path);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgDispatcher, rmg_dispatcher_unref);
 
