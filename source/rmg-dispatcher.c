@@ -233,6 +233,7 @@ rmg_dispatcher_new (RmgOptions *options,
 
   g_ref_count_init (&dispatcher->rc);
 
+  dispatcher->callback = dispatcher_source_callback;
   dispatcher->options = rmg_options_ref (options);
   dispatcher->journal = rmg_journal_ref (journal);
   dispatcher->executor = rmg_executor_ref (executor);

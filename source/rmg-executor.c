@@ -168,6 +168,7 @@ rmg_executor_new (void)
 
   g_ref_count_init (&executor->rc);
 
+  executor->callback = executor_source_callback;
   executor->queue = g_async_queue_new_full (executor_queue_destroy_notify);
 
   g_source_set_callback (RMG_EVENT_SOURCE (executor),

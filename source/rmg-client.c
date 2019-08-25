@@ -157,7 +157,7 @@ process_message (RmgClient *c,
   g_assert (msg);
 
   if (strncmp ((char *)msg->hdr.version, RMG_BUILDTIME_VERSION, RMG_VERSION_STRING_LEN) != 0)
-    g_warning ("Using different cdh header than coredumper");
+    g_warning ("Recoverymanager instances version not matching");
 
   switch (msg->hdr.type)
     {

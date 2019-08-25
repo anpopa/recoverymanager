@@ -1,6 +1,6 @@
 project('recoverymanager', 'c',
   version: '0.1.0',
-  meson_version: '>= 0.40.0',
+  meson_version: '>= 0.49.0',
   )
 
 add_project_arguments([
@@ -57,6 +57,9 @@ configure_file(input : 'config/recoverymanager.conf.in',
   output : 'recoverymanager.conf',
   configuration : rmg_config_data,
   install_dir : get_option('CONFDIR'))
+
+install_data('config/sample.recovery', 
+	install_dir : get_option('CONFDIR') / 'recoverymanager')
 
 dep_lxc = declare_dependency()
 if get_option('LXC')

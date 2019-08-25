@@ -88,9 +88,9 @@ on_properties_changed (GDBusProxy          *proxy,
       while (g_variant_iter_loop (iter, "{&sv}", &key, &value))
         {
           if (g_strcmp0 (key, "ActiveState") == 0)
-            active_state_str = g_variant_get_type_string (value);
+            active_state_str = g_variant_get_string (value, NULL);
           else if (g_strcmp0 (key, "SubState") == 0)
-            active_substate_str = g_variant_get_type_string (value);
+            active_substate_str = g_variant_get_string (value, NULL);
         }
 
       if ((active_state_str == NULL) || (active_substate_str == NULL))
@@ -110,23 +110,30 @@ on_properties_changed (GDBusProxy          *proxy,
                   active_state_str,
                   active_substate_str);
 
-          if ((mentry->active_state == SERVICE_STATE_ACTIVE)
+          if ((mentry->active_state != SERVICE_STATE_INACTIVE)
               && (active_state == SERVICE_STATE_INACTIVE))
             {
               dispatcher_event = DISPATCHER_EVENT_SERVICE_INACTIVE;
             }
           else
             {
-              dispatcher_event = DISPATCHER_EVENT_SERVICE_ACTIVE;
+              if ((mentry->active_state != SERVICE_STATE_ACTIVE)
+                  && (active_state == SERVICE_STATE_ACTIVE))
+                {
+                  dispatcher_event = DISPATCHER_EVENT_SERVICE_ACTIVE;
+                }
             }
 
           mentry->active_state = active_state;
           mentry->active_substate = active_substate;
 
-          rmg_dispatcher_push_service_event ((RmgDispatcher *)mentry->dispatcher,
-                                             dispatcher_event,
-                                             mentry->service_name,
-                                             mentry->object_path);
+          if (dispatcher_event != DISPATCHER_EVENT_UNKNOWN)
+            {
+              rmg_dispatcher_push_service_event ((RmgDispatcher *)mentry->dispatcher,
+                                                 dispatcher_event,
+                                                 mentry->service_name,
+                                                 mentry->object_path);
+            }
         }
 
       g_variant_iter_free (iter);

@@ -283,6 +283,7 @@ add_service (RmgMonitor *monitor,
         }
       else
         {
+          g_info ("Monitoring unit='%s' path='%s'", service_name, object_path);
           monitor->services = g_list_prepend (monitor->services, entry);
         }
     }
@@ -349,6 +350,12 @@ monitor_read_services (RmgMonitor *monitor)
     }
 }
 
+static void
+remove_service_entry (gpointer _entry)
+{
+  rmg_mentry_unref ((RmgMEntry *)_entry);
+}
+
 RmgMonitor *
 rmg_monitor_new (RmgDispatcher *dispatcher)
 {
@@ -392,6 +399,8 @@ rmg_monitor_unref (RmgMonitor *monitor)
         rmg_dispatcher_unref (monitor->dispatcher);
 
       g_async_queue_unref (monitor->queue);
+      g_list_free_full (monitor->services, remove_service_entry);
+
       g_source_unref (RMG_EVENT_SOURCE (monitor));
     }
 }

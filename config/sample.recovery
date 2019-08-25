@@ -1,4 +1,4 @@
-<service>Sample</service>
+<service>sample.service</service>
 <description>Sample service recovery unit</description>
 <relaxtime>300</relaxtime>
 <privatedata>/var/lib/sample/private</privatedata>
