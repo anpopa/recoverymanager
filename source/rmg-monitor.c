@@ -81,7 +81,11 @@ static void monitor_read_services (RmgMonitor *monitor);
 /**
  * @brief Add service if not exist
  */
-static void add_service (RmgMonitor *monitor, const gchar *service_name, const gchar *object_path);
+static void add_service (RmgMonitor *monitor,
+                         const gchar *service_name,
+                         const gchar *object_path,
+                         ServiceActiveState active_state,
+                         ServiceActiveSubstate active_substate);
 
 /**
  * @brief GSourceFuncs vtable
@@ -218,9 +222,17 @@ on_manager_signal (GDBusProxy *proxy,
       g_variant_get (parameters, "(so)", &service_name, &object_path);
 
       if ((service_name != NULL) && (object_path != NULL))
-        add_service (monitor, service_name, object_path);
+        {
+          add_service (monitor,
+                       service_name,
+                       object_path,
+                       SERVICE_STATE_INACTIVE,
+                       SERVICE_SUBSTATE_DEAD);
+        }
       else
-        g_warning ("Fail to read date on UnitNew signal");
+        {
+          g_warning ("Fail to read date on UnitNew signal");
+        }
     }
 }
 
@@ -257,7 +269,9 @@ monitor_build_proxy (RmgMonitor *monitor)
 static void
 add_service (RmgMonitor *monitor,
              const gchar *service_name,
-             const gchar *object_path)
+             const gchar *object_path,
+             ServiceActiveState active_state,
+             ServiceActiveSubstate active_substate)
 {
   GList *check_existent = NULL;
 
@@ -274,7 +288,10 @@ add_service (RmgMonitor *monitor,
 
   if (check_existent == NULL)
     {
-      RmgMEntry *entry = rmg_mentry_new (service_name, object_path);
+      RmgMEntry *entry = rmg_mentry_new (service_name,
+                                         object_path,
+                                         active_state,
+                                         active_substate);
 
       if (rmg_mentry_build_proxy (entry, monitor->dispatcher) != RMG_STATUS_OK)
         {
@@ -344,8 +361,17 @@ monitor_read_services (RmgMonitor *monitor)
                                   &jobtype,
                                   &jobobjectpath))
         {
-          if (unitname != NULL && objectpath != NULL)
-            add_service (monitor, unitname, objectpath);
+          if (unitname != NULL
+              && objectpath != NULL
+              && activestate != NULL
+              && substate != NULL)
+            {
+              add_service (monitor,
+                           unitname,
+                           objectpath,
+                           rmg_mentry_active_state_from (activestate),
+                           rmg_mentry_active_substate_from (substate));
+            }
         }
     }
 }

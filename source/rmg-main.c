@@ -105,7 +105,7 @@ main (gint argc, gchar *argv[])
         }
       else
         {
-          g_info ("Rmgrhost service started for OS version '%s'", rmg_utils_get_osversion ());
+          g_info ("Recoverymanager service started for OS version '%s'", rmg_utils_get_osversion ());
           g_mainloop = rmg_application_get_mainloop (app);
           status = rmg_application_execute (app);
         }

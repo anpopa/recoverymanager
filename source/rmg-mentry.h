@@ -73,7 +73,10 @@ typedef struct _RmgMEntry {
  * @brief Create a new mentry object
  * @return On success return a new RmgMEntry object otherwise return NULL
  */
-RmgMEntry *rmg_mentry_new (const gchar *service_name, const gchar *object_path);
+RmgMEntry *rmg_mentry_new (const gchar *service_name,
+                           const gchar *object_path,
+                           ServiceActiveState active_state,
+                           ServiceActiveSubstate active_substate);
 
 /**
  * @brief Aquire mentry object

@@ -184,8 +184,12 @@ rmg_mentry_get_active_substate (ServiceActiveSubstate state)
   return active_substate_names[state];
 }
 
-RmgMEntry *
-rmg_mentry_new (const gchar *service_name, const gchar *object_path)
+RmgMEntry
+*
+rmg_mentry_new (const gchar *service_name,
+                const gchar *object_path,
+                ServiceActiveState active_state,
+                ServiceActiveSubstate active_substate)
 {
   RmgMEntry *mentry = g_new0 (RmgMEntry, 1);
 
@@ -193,6 +197,8 @@ rmg_mentry_new (const gchar *service_name, const gchar *object_path)
 
   mentry->service_name = g_strdup (service_name);
   mentry->object_path = g_strdup (object_path);
+  mentry->active_state = active_state;
+  mentry->active_substate = active_substate;
 
   return mentry;
 }
