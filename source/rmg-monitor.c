@@ -79,6 +79,11 @@ static void monitor_build_proxy (RmgMonitor *monitor);
 static void monitor_read_services (RmgMonitor *monitor);
 
 /**
+ * @brief Add service if not exist
+ */
+static void add_service (RmgMonitor *monitor, const gchar *service_name, const gchar *object_path);
+
+/**
  * @brief GSourceFuncs vtable
  */
 static GSourceFuncs monitor_source_funcs =
@@ -93,7 +98,7 @@ static GSourceFuncs monitor_source_funcs =
 
 static void
 post_monitor_event (RmgMonitor *monitor,
-                     MonitorEventType type)
+                    MonitorEventType type)
 {
   RmgMonitorEvent *e = NULL;
 
@@ -107,7 +112,7 @@ post_monitor_event (RmgMonitor *monitor,
 
 static gboolean
 monitor_source_prepare (GSource *source,
-                         gint *timeout)
+                        gint *timeout)
 {
   RmgMonitor *monitor = (RmgMonitor *)source;
 
@@ -118,8 +123,8 @@ monitor_source_prepare (GSource *source,
 
 static gboolean
 monitor_source_dispatch (GSource *source,
-                          GSourceFunc callback,
-                          gpointer _monitor)
+                         GSourceFunc callback,
+                         gpointer _monitor)
 {
   RmgMonitor *monitor = (RmgMonitor *)source;
   gpointer event = g_async_queue_try_pop (monitor->queue);
@@ -135,7 +140,7 @@ monitor_source_dispatch (GSource *source,
 
 static gboolean
 monitor_source_callback (gpointer _monitor,
-                          gpointer _event)
+                         gpointer _event)
 {
   RmgMonitor *monitor = (RmgMonitor *)_monitor;
   RmgMonitorEvent *event = (RmgMonitorEvent *)_event;
@@ -195,10 +200,10 @@ find_service_by_name (gconstpointer _entry,
 
 static void
 on_manager_signal (GDBusProxy *proxy,
-           gchar      *sender_name,
-           gchar      *signal_name,
-           GVariant   *parameters,
-           gpointer    user_data)
+                   gchar      *sender_name,
+                   gchar      *signal_name,
+                   GVariant   *parameters,
+                   gpointer user_data)
 {
   RmgMonitor *monitor = (RmgMonitor *)user_data;
 
@@ -213,39 +218,13 @@ on_manager_signal (GDBusProxy *proxy,
       g_variant_get (parameters, "(so)", &service_name, &object_path);
 
       if ((service_name != NULL) && (object_path != NULL))
-        {
-          GList *check_existent = NULL; 
-
-          if (!g_str_has_suffix (service_name, ".service"))
-            return;
-
-          check_existent = g_list_find_custom (monitor->services, 
-                                                      service_name, 
-                                                      find_service_by_name);
-
-          if (check_existent == NULL)
-            {
-              RmgMEntry *entry = rmg_mentry_new (service_name, object_path);
-
-              if (rmg_mentry_build_proxy (entry, monitor->dispatcher) != RMG_STATUS_OK)
-                {
-                  g_warning ("Fail to build proxy for new service '%s'", service_name);
-                  rmg_mentry_unref (entry);
-                }
-              else
-                {
-                  monitor->services = g_list_prepend (monitor->services, entry);
-                }
-            }
-        }
+        add_service (monitor, service_name, object_path);
       else
-        {
-          g_warning ("Fail to read date on UnitNew signal");
-        }
+        g_warning ("Fail to read date on UnitNew signal");
     }
 }
 
-      
+
 static void
 monitor_build_proxy (RmgMonitor *monitor)
 {
@@ -254,16 +233,17 @@ monitor_build_proxy (RmgMonitor *monitor)
   g_assert (monitor);
 
   monitor->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
-                                                 G_DBUS_PROXY_FLAGS_NONE,
-                                                 NULL, /* GDBusInterfaceInfo */
-                                                 sd_dbus_name,
-                                                 sd_dbus_object_path,
-                                                 sd_dbus_interface_manager,
-                                                 NULL, /* GCancellable */
-                                                 &error);
+                                                  G_DBUS_PROXY_FLAGS_NONE,
+                                                  NULL, /* GDBusInterfaceInfo */
+                                                  sd_dbus_name,
+                                                  sd_dbus_object_path,
+                                                  sd_dbus_interface_manager,
+                                                  NULL, /* GCancellable */
+                                                  &error);
   if (error != NULL)
     {
-      g_warning ("Fail to build proxy for Manager. Error %s", error->message);
+      g_warning ("Fail to build proxy for Manager. Error %s",
+                 error->message);
     }
   else
     {
@@ -275,75 +255,96 @@ monitor_build_proxy (RmgMonitor *monitor)
 }
 
 static void
+add_service (RmgMonitor *monitor,
+             const gchar *service_name,
+             const gchar *object_path)
+{
+  GList *check_existent = NULL;
+
+  g_assert (monitor);
+  g_assert (service_name);
+  g_assert (object_path);
+
+  if (!g_str_has_suffix (service_name, ".service"))
+    return;
+
+  check_existent = g_list_find_custom (monitor->services,
+                                       service_name,
+                                       find_service_by_name);
+
+  if (check_existent == NULL)
+    {
+      RmgMEntry *entry = rmg_mentry_new (service_name, object_path);
+
+      if (rmg_mentry_build_proxy (entry, monitor->dispatcher) != RMG_STATUS_OK)
+        {
+          g_warning ("Fail to build proxy for new service '%s'", service_name);
+          rmg_mentry_unref (entry);
+        }
+      else
+        {
+          monitor->services = g_list_prepend (monitor->services, entry);
+        }
+    }
+}
+
+static void
 monitor_read_services (RmgMonitor *monitor)
 {
   g_autoptr (GError) error = NULL;
-  
+  GVariant *service_list;
+
   g_assert (monitor);
 
   if (monitor->proxy == NULL)
     {
       g_warning ("Monitor proxy not available for service units read");
+      g_return_if_reached ();
+    }
+
+  service_list = g_dbus_proxy_call_sync (monitor->proxy,
+                                         "ListUnits",
+                                         NULL,
+                                         G_DBUS_CALL_FLAGS_NONE,
+                                         -1,
+                                         NULL,
+                                         &error);
+  if (error != NULL)
+    {
+      g_warning ("Fail to call ListUnits on Manager proxy. Error %s",
+                 error->message);
     }
   else
     {
-      GVariant *service_list = g_dbus_proxy_call_sync (monitor->proxy, 
-                                                       "ListUnits", 
-                                                       NULL, 
-                                                       G_DBUS_CALL_FLAGS_NONE, 
-                                                       -1, 
-                                                       NULL, 
-                                                       &error);
-      if (error != NULL)
+      const gchar *unitname = NULL;
+      const gchar *description = NULL;
+      const gchar *loadstate = NULL;
+      const gchar *activestate = NULL;
+      const gchar *substate = NULL;
+      const gchar *followedby = NULL;
+      const gchar *objectpath = NULL;
+      const gchar *jobtype = NULL;
+      const gchar *jobobjectpath = NULL;
+      glong queuedjobs = 0;
+      g_autoptr (GVariantIter) iter = NULL;
+
+      g_variant_get (service_list, "(a(ssssssouso))", &iter);
+
+      while (g_variant_iter_loop (iter,
+                                  "(ssssssouso)",
+                                  &unitname,
+                                  &description,
+                                  &loadstate,
+                                  &activestate,
+                                  &substate,
+                                  &followedby,
+                                  &objectpath,
+                                  &queuedjobs,
+                                  &jobtype,
+                                  &jobobjectpath))
         {
-          g_warning ("Fail to call ListUnits on Manager proxy. Error %s", error->message);
-        }
-      else
-        {
-          GVariantIter iter;
-          GVariant *child;
-      
-          g_variant_iter_init (&iter, service_list);
-          
-          while ((child = g_variant_iter_next_value (&iter)))
-            {
-              g_autoptr (GVariant) sname = NULL;
-              g_autoptr (GVariant) opath = NULL;
-              g_autofree gchar *string = NULL;
-              GList *check_exist = NULL;
-             
-              string = g_variant_print (child, TRUE);
-              g_info ("%s", string);
-
-              sname = g_variant_get_child_value (child, 0);
-              opath = g_variant_get_child_value (child, 5);
-          
-              if (!g_str_has_suffix (g_variant_get_type_string (sname), ".service"))
-                continue;
-
-              check_exist = g_list_find_custom (monitor->services, 
-                                                   g_variant_get_type_string (sname), 
-                                                   find_service_by_name);
-
-              if (check_exist == NULL)
-                {
-                  RmgMEntry *entry = rmg_mentry_new (g_variant_get_type_string (sname), 
-                                                     g_variant_get_type_string (opath));
-
-                  if (rmg_mentry_build_proxy (entry, monitor->dispatcher) != RMG_STATUS_OK)
-                    {
-                      g_warning ("Fail to build proxy for new service '%s'", 
-                                 g_variant_get_type_string (sname));
-                      rmg_mentry_unref (entry);
-                    }
-                  else
-                    {
-                      monitor->services = g_list_prepend (monitor->services, entry);
-                    }
-                }
-
-              g_variant_unref (child);
-            }
+          if (unitname != NULL && objectpath != NULL)
+            add_service (monitor, unitname, objectpath);
         }
     }
 }
@@ -351,13 +352,14 @@ monitor_read_services (RmgMonitor *monitor)
 RmgMonitor *
 rmg_monitor_new (RmgDispatcher *dispatcher)
 {
-  RmgMonitor *monitor = (RmgMonitor *)g_source_new (&monitor_source_funcs, sizeof(RmgMonitor));
+  RmgMonitor *monitor = (RmgMonitor *)g_source_new (&monitor_source_funcs,
+                                                    sizeof(RmgMonitor));
 
   g_assert (monitor);
   g_assert (dispatcher);
 
   g_ref_count_init (&monitor->rc);
-  
+
   monitor->dispatcher = rmg_dispatcher_ref (dispatcher);
   monitor->queue = g_async_queue_new_full (monitor_queue_destroy_notify);
   monitor->callback = monitor_source_callback;
@@ -394,7 +396,7 @@ rmg_monitor_unref (RmgMonitor *monitor)
     }
 }
 
-void 
+void
 rmg_monitor_build_proxy (RmgMonitor *monitor)
 {
   post_monitor_event (monitor, MONITOR_EVENT_BUILD_PROXY);
