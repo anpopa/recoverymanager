@@ -29,6 +29,10 @@
 
 #include "rmg-executor.h"
 
+#ifdef WITH_LXC
+#include <lxc/lxccontainer.h>
+#endif
+
 /**
  * @brief Post new event
  *
@@ -386,16 +390,87 @@ static void
 do_process_context_restart_event_master (RmgExecutor *executor,
                                          RmgDEvent *dispatcher_event)
 {
-  RMG_UNUSED (executor);
-  RMG_UNUSED (dispatcher_event);
+  g_autofree gchar *service_name = NULL;
+
+  g_autoptr (GError) error = NULL;
+#ifdef WITH_LXC
+  g_autofree struct lxc_container *container = NULL;
+#endif
+  gulong service_hash = 0;
+
+  g_assert (executor);
+  g_assert (dispatcher_event);
+
+  service_name = g_strdup_printf ("%s.service", dispatcher_event->context_name);
+
+  /* check if a recovery unit is available */
+  service_hash = rmg_journal_get_hash (executor->journal, service_name, &error);
+  if (error != NULL)
+    {
+      g_warning ("Fail to get service hash %s. Error %s", service_name, error->message);
+      g_return_if_reached ();
+    }
+  else
+    {
+      if (service_hash == 0)
+        {
+          g_warning ("No recovery unit defined for container service='%s'",
+                     dispatcher_event->service_name);
+        }
+    }
+
+  g_info ("Request container '%s' reboot", dispatcher_event->context_name);
+#ifdef WITH_LXC
+  container = lxc_container_new (dispatcher_event->context_name, NULL);
+  if (container != NULL)
+    {
+      if (!container->is_running (container))
+        g_warning ("Container %s not running", dispatcher_event->context_name);
+
+      if (!container->shutdown (container, 30))
+        g_warning ("Fail to reboot container %s", dispatcher_event->context_name);
+    }
+#endif
 }
 
 static void
 do_process_context_restart_event_slave (RmgExecutor *executor,
                                         RmgDEvent *dispatcher_event)
 {
-  RMG_UNUSED (executor);
-  RMG_UNUSED (dispatcher_event);
+  RmgMessage msg;
+  RmgMessageRequestContextRestart data;
+  const gchar *hostname = g_get_host_name ();
+
+  g_assert (executor);
+  g_assert (dispatcher_event);
+  g_assert (executor->manager);
+
+  memset (&data, 0, sizeof(RmgMessageRequestContextRestart));
+
+  if (!rmg_manager_connected (executor->manager))
+    {
+      if (rmg_manager_connect (executor->manager) != RMG_STATUS_OK)
+        {
+          g_warning ("Fail to connect to master instance");
+          g_return_if_reached ();
+        }
+    }
+
+  rmg_message_init (&msg, RMG_REQUEST_CONTEXT_RESTART, 0);
+
+  memcpy (&data.service_name,
+          dispatcher_event->service_name,
+          strlen (dispatcher_event->service_name) + 1);
+  memcpy (&data.context_name,
+          hostname,
+          strlen (hostname) + 1);
+
+  rmg_message_set_data (&msg, &data, sizeof(data));
+
+  if (rmg_manager_send (executor->manager, &msg) != RMG_STATUS_OK)
+    g_warning ("Fail to send context restart event to master");
+  else
+    enter_meditation (executor, dispatcher_event);
 }
 
 static void
@@ -434,8 +509,38 @@ static void
 do_process_platform_restart_event_slave (RmgExecutor *executor,
                                          RmgDEvent *dispatcher_event)
 {
-  RMG_UNUSED (executor);
-  RMG_UNUSED (dispatcher_event);
+  RmgMessage msg;
+  RmgMessageRequestPlatformRestart data;
+  const gchar *hostname = g_get_host_name ();
+
+  g_assert (executor);
+  g_assert (dispatcher_event);
+  g_assert (executor->manager);
+
+  memset (&data, 0, sizeof(RmgMessageRequestPlatformRestart));
+
+  if (!rmg_manager_connected (executor->manager))
+    {
+      if (rmg_manager_connect (executor->manager) != RMG_STATUS_OK)
+        {
+          g_warning ("Fail to connect to master instance");
+          g_return_if_reached ();
+        }
+    }
+
+  rmg_message_init (&msg, RMG_REQUEST_PLATFORM_RESTART, 0);
+
+  memcpy (&data.service_name,
+          dispatcher_event->service_name,
+          strlen (dispatcher_event->service_name) + 1);
+  memcpy (&data.context_name,
+          hostname,
+          strlen (hostname) + 1);
+
+  rmg_message_set_data (&msg, &data, sizeof(data));
+
+  if (rmg_manager_send (executor->manager, &msg) != RMG_STATUS_OK)
+    g_warning ("Fail to send platform restart event to master");
 }
 
 static void
@@ -486,8 +591,38 @@ static void
 do_process_factory_reset_event_slave (RmgExecutor *executor,
                                       RmgDEvent *dispatcher_event)
 {
-  RMG_UNUSED (executor);
-  RMG_UNUSED (dispatcher_event);
+  RmgMessage msg;
+  RmgMessageRequestFactoryReset data;
+  const gchar *hostname = g_get_host_name ();
+
+  g_assert (executor);
+  g_assert (dispatcher_event);
+  g_assert (executor->manager);
+
+  memset (&data, 0, sizeof(RmgMessageRequestFactoryReset));
+
+  if (!rmg_manager_connected (executor->manager))
+    {
+      if (rmg_manager_connect (executor->manager) != RMG_STATUS_OK)
+        {
+          g_warning ("Fail to connect to master instance");
+          g_return_if_reached ();
+        }
+    }
+
+  rmg_message_init (&msg, RMG_REQUEST_FACTORY_RESET, 0);
+
+  memcpy (&data.service_name,
+          dispatcher_event->service_name,
+          strlen (dispatcher_event->service_name) + 1);
+  memcpy (&data.context_name,
+          hostname,
+          strlen (hostname) + 1);
+
+  rmg_message_set_data (&msg, &data, sizeof(data));
+
+  if (rmg_manager_send (executor->manager, &msg) != RMG_STATUS_OK)
+    g_warning ("Fail to send factory reset event to master");
 }
 
 static void
