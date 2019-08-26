@@ -69,6 +69,36 @@ static void executor_queue_destroy_notify (gpointer _executor);
 static void do_process_service_restart_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
 
 /**
+ * @brief Process service reset public data event
+ */
+static void do_process_service_reset_public_data_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
+ * @brief Process service reset private data event
+ */
+static void do_process_service_reset_private_data_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
+ * @brief Process service disable event
+ */
+static void do_process_service_disable_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
+ * @brief Process service context restart event
+ */
+static void do_process_context_restart_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
+ * @brief Process service platform restart event
+ */
+static void do_process_platform_restart_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
+ * @brief Process service factory reset event
+ */
+static void do_process_factory_reset_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
  * @brief GSourceFuncs vtable
  */
 static GSourceFuncs executor_source_funcs =
@@ -143,6 +173,30 @@ executor_source_callback (gpointer _executor,
       do_process_service_restart_event (executor, event->dispatcher_event);
       break;
 
+    case EXECUTOR_EVENT_SERVICE_RESET_PUBLIC_DATA:
+      do_process_service_reset_public_data_event (executor, event->dispatcher_event);
+      break;
+
+    case EXECUTOR_EVENT_SERVICE_RESET_PRIVATE_DATA:
+      do_process_service_reset_private_data_event (executor, event->dispatcher_event);
+      break;
+
+    case EXECUTOR_EVENT_SERVICE_DISABLE:
+      do_process_service_disable_event (executor, event->dispatcher_event);
+      break;
+
+    case EXECUTOR_EVENT_CONTEXT_RESTART:
+      do_process_context_restart_event (executor, event->dispatcher_event);
+      break;
+
+    case EXECUTOR_EVENT_PLATFORM_RESTART:
+      do_process_platform_restart_event (executor, event->dispatcher_event);
+      break;
+
+    case EXECUTOR_EVENT_FACTORY_RESET:
+      do_process_factory_reset_event (executor, event->dispatcher_event);
+      break;
+
     default:
       break;
     }
@@ -153,6 +207,53 @@ executor_source_callback (gpointer _executor,
   return TRUE;
 }
 
+static void
+do_process_service_reset_public_data_event (RmgExecutor *executor,
+                                            RmgDEvent *dispatcher_event)
+{
+  RMG_UNUSED (executor);
+  RMG_UNUSED (dispatcher_event);
+}
+
+static void
+do_process_service_reset_private_data_event (RmgExecutor *executor,
+                                             RmgDEvent *dispatcher_event)
+{
+  RMG_UNUSED (executor);
+  RMG_UNUSED (dispatcher_event);
+}
+
+static void
+do_process_service_disable_event (RmgExecutor *executor,
+                                  RmgDEvent *dispatcher_event)
+{
+  RMG_UNUSED (executor);
+  RMG_UNUSED (dispatcher_event);
+}
+
+static void
+do_process_context_restart_event (RmgExecutor *executor,
+                                  RmgDEvent *dispatcher_event)
+{
+  RMG_UNUSED (executor);
+  RMG_UNUSED (dispatcher_event);
+}
+
+static void
+do_process_platform_restart_event (RmgExecutor *executor,
+                                   RmgDEvent *dispatcher_event)
+{
+  RMG_UNUSED (executor);
+  RMG_UNUSED (dispatcher_event);
+}
+
+static void
+do_process_factory_reset_event (RmgExecutor *executor,
+                                RmgDEvent *dispatcher_event)
+{
+  RMG_UNUSED (executor);
+  RMG_UNUSED (dispatcher_event);
+}
 
 static void
 do_process_service_restart_event (RmgExecutor *executor,
@@ -205,7 +306,7 @@ executor_queue_destroy_notify (gpointer _executor)
 }
 
 RmgExecutor *
-rmg_executor_new (void)
+rmg_executor_new (RmgOptions *options, RmgJournal *journal)
 {
   RmgExecutor *executor = (RmgExecutor *)g_source_new (&executor_source_funcs, sizeof(RmgExecutor));
 
@@ -214,6 +315,12 @@ rmg_executor_new (void)
   g_ref_count_init (&executor->rc);
 
   executor->callback = executor_source_callback;
+  executor->options = rmg_options_ref (options);
+  executor->journal = rmg_journal_ref (journal);
+
+  if (g_run_mode == RUN_MODE_SLAVE)
+    executor->manager = rmg_manager_new (options);
+
   executor->queue = g_async_queue_new_full (executor_queue_destroy_notify);
 
   g_source_set_callback (RMG_EVENT_SOURCE (executor),
@@ -240,6 +347,15 @@ rmg_executor_unref (RmgExecutor *executor)
 
   if (g_ref_count_dec (&executor->rc) == TRUE)
     {
+      if (executor->options != NULL)
+        rmg_options_unref (executor->options);
+
+      if (executor->journal != NULL)
+        rmg_journal_unref (executor->journal);
+
+      if (executor->manager != NULL)
+        rmg_manager_unref (executor->manager);
+
       g_async_queue_unref (executor->queue);
       g_source_unref (RMG_EVENT_SOURCE (executor));
     }

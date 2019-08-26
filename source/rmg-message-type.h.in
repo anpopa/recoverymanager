@@ -48,14 +48,27 @@ G_BEGIN_DECLS
 typedef enum _RmgMessageType {
   RMG_MESSAGE_UNKNOWN,
   RMG_REQUEST_ACTION,
+  RMG_REQUEST_CONTEXT_RESTART,
+  RMG_REQUEST_PLATFORM_RESTART,
+  RMG_REQUEST_FACTORY_RESET,
   RMG_ACTION_RESPONSE,
   RMG_INSTANCE_STATUS
 } RmgMessageType;
 
-typedef struct _RmgMessageRequestAction {
-  char action_name[RMG_DATA_NAME_LEN];
+typedef struct _RmgMessageRequestContextRestart {
   char service_name[RMG_DATA_NAME_LEN];
-} RmgMessageRequestAction;
+  char context_name[RMG_DATA_NAME_LEN];
+} RmgMessageRequestContextRestart;
+
+typedef struct _RmgMessageRequestPlatformRestart {
+  char service_name[RMG_DATA_NAME_LEN];
+  char context_name[RMG_DATA_NAME_LEN];
+} RmgMessageRequestPlatformRestart;
+
+typedef struct _RmgMessageRequestFactoryReset {
+  char service_name[RMG_DATA_NAME_LEN];
+  char context_name[RMG_DATA_NAME_LEN];
+} RmgMessageRequestFactoryReset;
 
 typedef struct _RmgMessageActionResponse {
   uint64_t value;
@@ -66,7 +79,9 @@ typedef struct _RmgMessageInstanceStatus {
 } RmgMessageInstanceStatus;
 
 typedef union _RmgMessageData {
-  RmgMessageRequestAction request;
+  RmgMessageRequestContextRestart context_restart;
+  RmgMessageRequestPlatformRestart platform_restart;
+  RmgMessageRequestFactoryReset factory_reset;
   RmgMessageActionResponse value;
   RmgMessageInstanceStatus status;
 } RmgMessageData;

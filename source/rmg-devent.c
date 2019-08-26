@@ -61,6 +61,9 @@ rmg_devent_unref (RmgDEvent *event)
       if (event->object_path != NULL)
         g_free (event->object_path);
 
+      if (event->context_name != NULL)
+        g_free (event->context_name);
+
       if (event->manager_proxy != NULL)
         g_object_unref (event->manager_proxy);
 
@@ -89,6 +92,14 @@ rmg_devent_set_object_path (RmgDEvent *event,
 {
   g_assert (event);
   event->object_path = g_strdup (object_path);
+}
+
+void
+rmg_devent_set_context_name (RmgDEvent *event,
+                             const gchar *context_name)
+{
+  g_assert (event);
+  event->context_name = g_strdup (context_name);
 }
 
 void

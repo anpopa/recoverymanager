@@ -113,14 +113,14 @@ on_properties_changed (GDBusProxy          *proxy,
           if ((mentry->active_state != SERVICE_STATE_INACTIVE)
               && (active_state == SERVICE_STATE_INACTIVE))
             {
-              dispatcher_event = DISPATCHER_EVENT_SERVICE_INACTIVE;
+              dispatcher_event = DISPATCHER_EVENT_SERVICE_CRASHED;
             }
           else
             {
               if ((mentry->active_state != SERVICE_STATE_ACTIVE)
                   && (active_state == SERVICE_STATE_ACTIVE))
                 {
-                  dispatcher_event = DISPATCHER_EVENT_SERVICE_ACTIVE;
+                  dispatcher_event = DISPATCHER_EVENT_SERVICE_RESTARTED;
                 }
             }
 

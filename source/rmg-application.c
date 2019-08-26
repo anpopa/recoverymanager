@@ -79,9 +79,6 @@ rmg_application_new (const gchar *config, GError **error)
   /* construct sdnotify noexept */
   app->sdnotify = rmg_sdnotify_new ();
 
-  /* construct executor */
-  app->executor = rmg_executor_new ();
-
   /* construct options noexept */
   app->options = rmg_options_new (config);
 
@@ -98,6 +95,9 @@ rmg_application_new (const gchar *config, GError **error)
     g_info ("Recovery manager running as master");
   else
     g_info ("Recovery manager running as slave");
+
+  /* construct executor */
+  app->executor = rmg_executor_new (app->options, app->journal);
 
   /* construct dispatcher and return if an error is set */
   app->dispatcher = rmg_dispatcher_new (app->options,

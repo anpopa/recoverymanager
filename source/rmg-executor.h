@@ -30,6 +30,9 @@
 #pragma once
 
 #include "rmg-devent.h"
+#include "rmg-options.h"
+#include "rmg-journal.h"
+#include "rmg-manager.h"
 #include "rmg-types.h"
 
 #include <glib.h>
@@ -43,7 +46,12 @@ G_BEGIN_DECLS
  */
 typedef enum _ExecutorEventType {
   EXECUTOR_EVENT_SERVICE_RESTART,
-  EXECUTOR_EVENT_SERVICE_RELAXED
+  EXECUTOR_EVENT_SERVICE_RESET_PUBLIC_DATA,
+  EXECUTOR_EVENT_SERVICE_RESET_PRIVATE_DATA,
+  EXECUTOR_EVENT_SERVICE_DISABLE,
+  EXECUTOR_EVENT_CONTEXT_RESTART,
+  EXECUTOR_EVENT_PLATFORM_RESTART,
+  EXECUTOR_EVENT_FACTORY_RESET
 } ExecutorEventType;
 
 /**
@@ -67,6 +75,9 @@ typedef struct _RmgExecutorEvent {
  */
 typedef struct _RmgExecutor {
   GSource source;  /**< Event loop source */
+  RmgOptions *options;
+  RmgJournal *journal;
+  RmgManager *manager;
   GAsyncQueue    *queue;  /**< Async queue */
   RmgExecutorCallback callback; /**< Callback function */
   grefcount rc;     /**< Reference counter variable  */
@@ -76,7 +87,7 @@ typedef struct _RmgExecutor {
  * @brief Create a new executor object
  * @return On success return a new RmgExecutor object otherwise return NULL
  */
-RmgExecutor *rmg_executor_new (void);
+RmgExecutor *rmg_executor_new (RmgOptions *options, RmgJournal *journal);
 
 /**
  * @brief Aquire executor object

@@ -124,13 +124,10 @@ client_source_callback (gpointer data)
     }
   else
     {
-      RmgMessageType type = rmg_message_get_type (&msg);
-
       process_message (client, &msg);
-
-      /* TODO: More actions based on msg type */
-      RMG_UNUSED (type);
     }
+
+  rmg_message_free_data (&msg);
 
   return status;
 }
@@ -152,6 +149,7 @@ process_message (RmgClient *c,
 {
   g_autofree gchar *tmp_id = NULL;
   g_autofree gchar *tmp_name = NULL;
+  RmgDispatcher *dispatcher = (RmgDispatcher *)c->dispatcher;
 
   g_assert (c);
   g_assert (msg);
@@ -159,11 +157,43 @@ process_message (RmgClient *c,
   if (strncmp ((char *)msg->hdr.version, RMG_BUILDTIME_VERSION, RMG_VERSION_STRING_LEN) != 0)
     g_warning ("Recoverymanager instances version not matching");
 
-  switch (msg->hdr.type)
+  switch (rmg_message_get_type (msg))
     {
-    case RMG_REQUEST_ACTION:
-      g_assert (msg->data);
-      break;
+    case RMG_REQUEST_CONTEXT_RESTART:
+    {
+      RmgMessageRequestContextRestart *context = (RmgMessageRequestContextRestart *)msg->data;
+      RmgDEvent *event = rmg_devent_new (DISPATCHER_EVENT_REMOTE_CONTEXT_RESTART);
+
+      rmg_devent_set_service_name (event, context->service_name);
+      rmg_devent_set_context_name (event, context->context_name);
+
+      rmg_dispatcher_push_service_event (dispatcher, event);
+    }
+    break;
+
+    case RMG_REQUEST_PLATFORM_RESTART:
+    {
+      RmgMessageRequestPlatformRestart *context = (RmgMessageRequestPlatformRestart *)msg->data;
+      RmgDEvent *event = rmg_devent_new (DISPATCHER_EVENT_REMOTE_CONTEXT_RESTART);
+
+      rmg_devent_set_service_name (event, context->service_name);
+      rmg_devent_set_context_name (event, context->context_name);
+
+      rmg_dispatcher_push_service_event (dispatcher, event);
+    }
+    break;
+
+    case RMG_REQUEST_FACTORY_RESET:
+    {
+      RmgMessageRequestFactoryReset *context = (RmgMessageRequestFactoryReset *)msg->data;
+      RmgDEvent *event = rmg_devent_new (DISPATCHER_EVENT_REMOTE_FACTORY_RESET);
+
+      rmg_devent_set_service_name (event, context->service_name);
+      rmg_devent_set_context_name (event, context->context_name);
+
+      rmg_dispatcher_push_service_event (dispatcher, event);
+    }
+    break;
 
     default:
       break;

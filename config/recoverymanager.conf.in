@@ -11,6 +11,20 @@ RunMode = master
 UnitsDirectory = @config_dir@/recoverymanager
 # DatabaseDirectory application database directory
 DatabaseDirectory = /var/lib/recoverymanager
+# PublicDataResetCommand defines the command to execute in order to reset
+# service public data. The path defined in recovery unet as public data location
+# can be added with placeholder ${path}. The service name can be replaced with
+# placeholder ${service_name}
+PublicDataResetCommand = rm -rf ${path}
+# PrivateDataResetCommand defines the command to execute in order to reset
+# service public data. The path defined in recovery unet as public data location
+# can be added with placeholder ${path}. The service name can be replaced with
+# placeholder ${service_name}
+PrivateDataResetCommand = rm -rf ${path}
+# PlatformRestartCommand defines the comand to restart the platform
+PlatformRestartCommand = systemctl reboot
+# FactoryResetCommand defines the comand to reset platform data
+FactoryResetCommand = echo "No factory reset supported"
 # IpcSocketFile defines the path to the ipc unix domain socket file
 #     The recoverymanager will create and listen on this socket in master mode
 IpcSocketFile = /run/recoverymanager/rmgr.sock

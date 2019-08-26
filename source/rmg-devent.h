@@ -42,9 +42,11 @@ G_BEGIN_DECLS
  */
 typedef enum _DispatcherEventType {
   DISPATCHER_EVENT_UNKNOWN,
-  DISPATCHER_EVENT_SERVICE_INACTIVE,
-  DISPATCHER_EVENT_SERVICE_ACTIVE,
-  DISPATCHER_EVENT_SERVICE_RELAXED
+  DISPATCHER_EVENT_SERVICE_CRASHED,
+  DISPATCHER_EVENT_SERVICE_RESTARTED,
+  DISPATCHER_EVENT_REMOTE_CONTEXT_RESTART,
+  DISPATCHER_EVENT_REMOTE_PLATFORM_RESTART,
+  DISPATCHER_EVENT_REMOTE_FACTORY_RESET
 } DispatcherEventType;
 
 /**
@@ -55,6 +57,7 @@ typedef struct _RmgDEvent {
   DispatcherEventType type;  /**< The event type the element holds */
   gchar *service_name;       /**< Service name for the event */
   gchar *object_path;        /**< Service object path */
+  gchar *context_name;        /**< Service object path */
   GDBusProxy *manager_proxy; /**< Systemd manager proxy */
   grefcount rc;              /**< Reference counter variable  */
 } RmgDEvent;
@@ -91,6 +94,11 @@ void rmg_devent_set_service_name (RmgDEvent *event, const gchar *service_name);
  * @brief Set dispatcher event object path
  */
 void rmg_devent_set_object_path (RmgDEvent *event, const gchar *object_path);
+
+/**
+ * @brief Set dispatcher event context (container) name
+ */
+void rmg_devent_set_context_name (RmgDEvent *event, const gchar *context_name);
 
 /**
  * @brief Set dispatcher event manager proxy

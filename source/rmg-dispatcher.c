@@ -127,13 +127,37 @@ dispatcher_source_callback (gpointer _dispatcher,
 
   switch (event->type)
     {
-    case DISPATCHER_EVENT_SERVICE_INACTIVE:
+    case DISPATCHER_EVENT_SERVICE_CRASHED:
       g_info ("Service '%s' crash event detected", event->service_name);
       do_process_service_crash_event (dispatcher, event);
       break;
 
-    case DISPATCHER_EVENT_SERVICE_ACTIVE:
+    case DISPATCHER_EVENT_SERVICE_RESTARTED:
       g_info ("Service '%s' restarted", event->service_name);
+      break;
+
+    case DISPATCHER_EVENT_REMOTE_CONTEXT_RESTART:
+      g_info ("Service '%s' from container '%s' request container restart",
+              event->service_name,
+              event->context_name);
+
+      rmg_executor_push_event (dispatcher->executor, EXECUTOR_EVENT_CONTEXT_RESTART, event);
+      break;
+
+    case DISPATCHER_EVENT_REMOTE_PLATFORM_RESTART:
+      g_info ("Service '%s' from container '%s' request platform restart",
+              event->service_name,
+              event->context_name);
+
+      rmg_executor_push_event (dispatcher->executor, EXECUTOR_EVENT_PLATFORM_RESTART, event);
+      break;
+
+    case DISPATCHER_EVENT_REMOTE_FACTORY_RESET:
+      g_info ("Service '%s' from container '%s' request factory reset",
+              event->service_name,
+              event->context_name);
+
+      rmg_executor_push_event (dispatcher->executor, EXECUTOR_EVENT_FACTORY_RESET, event);
       break;
 
     default:
@@ -191,19 +215,6 @@ run_mode_specific_init (RmgDispatcher *dispatcher, GError **error)
             }
         }
     }
-  else
-    {
-      dispatcher->manager = rmg_manager_new (dispatcher->options);
-
-      status = rmg_manager_connect (dispatcher->manager);
-      if (status != RMG_STATUS_OK)
-        {
-          g_set_error (error,
-                       g_quark_from_static_string ("DispatcherNew"),
-                       1,
-                       "Cannot connect to master");
-        }
-    }
 
   return status;
 }
@@ -214,10 +225,27 @@ do_process_service_crash_event (RmgDispatcher *dispatcher, RmgDEvent *event)
   RmgActionType action_type = ACTION_INVALID;
 
   g_autoptr (GError) error = NULL;
+  gulong service_hash = 0;
   glong rvector = 0;
 
   g_assert (dispatcher);
   g_assert (event);
+
+  /* check if a recovery unit is available */
+  service_hash = rmg_journal_get_hash (dispatcher->journal, event->service_name, &error);
+  if (error != NULL)
+    {
+      g_warning ("Fail to get service hash %s. Error %s", event->service_name, error->message);
+      g_return_if_reached ();
+    }
+  else
+    {
+      if (service_hash == 0)
+        {
+          g_info ("No recovery unit defined for crashed service='%s'", event->service_name);
+          g_return_if_reached ();
+        }
+    }
 
   /* we increment the rvector for this service */
   rvector = rmg_journal_get_rvector (dispatcher->journal, event->service_name, &error);
@@ -255,8 +283,31 @@ do_process_service_crash_event (RmgDispatcher *dispatcher, RmgDEvent *event)
   switch (action_type)
     {
     case ACTION_SERVICE_RESET:
-      g_info ("Service action '%s' requiered for recovery vector value=%ld", event->service_name, rvector);
       rmg_executor_push_event (dispatcher->executor, EXECUTOR_EVENT_SERVICE_RESTART, event);
+      break;
+
+    case ACTION_PUBLIC_DATA_RESET:
+      rmg_executor_push_event (dispatcher->executor, EXECUTOR_EVENT_SERVICE_RESET_PUBLIC_DATA, event);
+      break;
+
+    case ACTION_PRIVATE_DATA_RESET:
+      rmg_executor_push_event (dispatcher->executor, EXECUTOR_EVENT_SERVICE_RESET_PRIVATE_DATA, event);
+      break;
+
+    case ACTION_SERVICE_DISABLE:
+      rmg_executor_push_event (dispatcher->executor, EXECUTOR_EVENT_SERVICE_DISABLE, event);
+      break;
+
+    case ACTION_CONTEXT_RESET:
+      rmg_executor_push_event (dispatcher->executor, EXECUTOR_EVENT_CONTEXT_RESTART, event);
+      break;
+
+    case ACTION_PLATFORM_RESTART:
+      rmg_executor_push_event (dispatcher->executor, EXECUTOR_EVENT_PLATFORM_RESTART, event);
+      break;
+
+    case ACTION_FACTORY_RESET:
+      rmg_executor_push_event (dispatcher->executor, EXECUTOR_EVENT_FACTORY_RESET, event);
       break;
 
     case ACTION_INVALID:
@@ -329,9 +380,6 @@ rmg_dispatcher_unref (RmgDispatcher *dispatcher)
 
       if (dispatcher->server != NULL)
         rmg_server_unref (dispatcher->server);
-
-      if (dispatcher->manager != NULL)
-        rmg_manager_unref (dispatcher->manager);
 
       g_async_queue_unref (dispatcher->queue);
       g_source_unref (RMG_EVENT_SOURCE (dispatcher));

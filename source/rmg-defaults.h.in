@@ -57,6 +57,22 @@ G_BEGIN_DECLS
 #define RMG_RUN_MODE "auto"
 #endif
 
+#ifndef RMG_PUBLIC_DATA_RESET_CMD
+#define RMG_PUBLIC_DATA_RESET_CMD "rm -rf ${path}"
+#endif
+
+#ifndef RMG_PRIVATE_DATA_RESET_CMD
+#define RMG_PRIVATE_DATA_RESET_CMD "rm -rf ${path}"
+#endif
+
+#ifndef RMG_PLATFORM_RESTART_CMD
+#define RMG_PLATFORM_RESTART_CMD "reboot"
+#endif
+
+#ifndef RMG_FACTORY_RESET_CMD
+#define RMG_FACTORY_RESET_CMD "true"
+#endif
+
 #ifndef RMG_IPC_SOCK_ADDR
 #define RMG_IPC_SOCK_ADDR "/run/rmgr/rmgipc.sock"
 #endif

@@ -59,7 +59,6 @@ typedef struct _RmgDispatcher {
   RmgJournal *journal;
   RmgExecutor *executor;
   RmgServer *server;
-  RmgManager *manager;
   grefcount rc;     /**< Reference counter variable  */
 } RmgDispatcher;
 

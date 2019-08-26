@@ -133,6 +133,46 @@ rmg_options_string_for (RmgOptions *opts,
         }
       return g_strdup (RMG_UNITS_DIR);
 
+    case KEY_PRIVATE_DATA_RESET_CMD:
+      if (opts->has_conf)
+        {
+          gchar *tmp = g_key_file_get_string (opts->conf, "recoverymanager", "PrivateDataResetCommand", NULL);
+
+          if (tmp != NULL)
+            return tmp;
+        }
+      return g_strdup (RMG_PRIVATE_DATA_RESET_CMD);
+
+    case KEY_PUBLIC_DATA_RESET_CMD:
+      if (opts->has_conf)
+        {
+          gchar *tmp = g_key_file_get_string (opts->conf, "recoverymanager", "PublicDataResetCommand", NULL);
+
+          if (tmp != NULL)
+            return tmp;
+        }
+      return g_strdup (RMG_PUBLIC_DATA_RESET_CMD);
+
+    case KEY_PLATFORM_RESTART_CMD:
+      if (opts->has_conf)
+        {
+          gchar *tmp = g_key_file_get_string (opts->conf, "recoverymanager", "PlatformRestartCommand", NULL);
+
+          if (tmp != NULL)
+            return tmp;
+        }
+      return g_strdup (RMG_PLATFORM_RESTART_CMD);
+
+    case KEY_FACTORY_RESET_CMD:
+      if (opts->has_conf)
+        {
+          gchar *tmp = g_key_file_get_string (opts->conf, "recoverymanager", "FactoryResetCommand", NULL);
+
+          if (tmp != NULL)
+            return tmp;
+        }
+      return g_strdup (RMG_FACTORY_RESET_CMD);
+
     case KEY_IPC_SOCK_ADDR:
       if (opts->has_conf)
         {
