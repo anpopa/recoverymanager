@@ -36,7 +36,7 @@
  * @param type The type of the new event to be posted
  * @param service_name The service name having this event
  */
-static void post_executor_event (RmgExecutor *executor, ExecutorEventType type, const gchar *service_name);
+static void post_executor_event (RmgExecutor *executor, ExecutorEventType type, RmgDEvent *dispatcher_event);
 
 /**
  * @brief GSource prepare function
@@ -64,6 +64,11 @@ static void executor_source_destroy_notify (gpointer _executor);
 static void executor_queue_destroy_notify (gpointer _executor);
 
 /**
+ * @brief Process service restart event
+ */
+static void do_process_service_restart_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
  * @brief GSourceFuncs vtable
  */
 static GSourceFuncs executor_source_funcs =
@@ -79,17 +84,17 @@ static GSourceFuncs executor_source_funcs =
 static void
 post_executor_event (RmgExecutor *executor,
                      ExecutorEventType type,
-                     const gchar *service_name)
+                     RmgDEvent *dispatcher_event)
 {
   RmgExecutorEvent *e = NULL;
 
   g_assert (executor);
-  g_assert (service_name);
+  g_assert (dispatcher_event);
 
   e = g_new0 (RmgExecutorEvent, 1);
 
   e->type = type;
-  e->service_name = g_strdup (service_name);
+  e->dispatcher_event = rmg_devent_ref (dispatcher_event);
 
   g_async_queue_push (executor->queue, e);
 }
@@ -132,13 +137,53 @@ executor_source_callback (gpointer _executor,
   g_assert (executor);
   g_assert (event);
 
+  switch (event->type)
+    {
+    case EXECUTOR_EVENT_SERVICE_RESTART:
+      do_process_service_restart_event (executor, event->dispatcher_event);
+      break;
 
-  /* TODO: Process the event */
+    default:
+      break;
+    }
 
-  g_free (event->service_name);
+  rmg_devent_unref (event->dispatcher_event);
   g_free (event);
 
   return TRUE;
+}
+
+
+static void
+do_process_service_restart_event (RmgExecutor *executor,
+                                  RmgDEvent *dispatcher_event)
+{
+  g_autoptr (GError) error = NULL;
+  g_autoptr (GVariant) response;
+
+  g_assert (executor);
+  g_assert (dispatcher_event);
+
+  response = g_dbus_proxy_call_sync (dispatcher_event->manager_proxy,
+                                     "RestartUnit",
+                                     g_variant_new ("(ss)",
+                                                    dispatcher_event->service_name,
+                                                    "replace"),
+                                     G_DBUS_CALL_FLAGS_NONE,
+                                     -1,
+                                     NULL,
+                                     &error);
+
+
+  if (error != NULL)
+    {
+      g_warning ("Fail to call RestartUnit on Manager proxy. Error %s",
+                 error->message);
+    }
+  else
+    {
+      g_info ("Request service restart for unit='%s'", dispatcher_event->service_name);
+    }
 }
 
 static void
@@ -200,3 +245,10 @@ rmg_executor_unref (RmgExecutor *executor)
     }
 }
 
+void
+rmg_executor_push_event (RmgExecutor *executor,
+                         ExecutorEventType type,
+                         RmgDEvent *dispatcher_event)
+{
+  post_executor_event (executor, type, dispatcher_event);
+}

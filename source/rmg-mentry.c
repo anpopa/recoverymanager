@@ -129,10 +129,13 @@ on_properties_changed (GDBusProxy          *proxy,
 
           if (dispatcher_event != DISPATCHER_EVENT_UNKNOWN)
             {
-              rmg_dispatcher_push_service_event ((RmgDispatcher *)mentry->dispatcher,
-                                                 dispatcher_event,
-                                                 mentry->service_name,
-                                                 mentry->object_path);
+              RmgDEvent *event = rmg_devent_new (dispatcher_event);
+
+              rmg_devent_set_service_name (event, mentry->service_name);
+              rmg_devent_set_object_path (event, mentry->object_path);
+              rmg_devent_set_manager_proxy (event, mentry->manager_proxy);
+
+              rmg_dispatcher_push_service_event ((RmgDispatcher *)mentry->dispatcher, event);
             }
         }
 
@@ -227,11 +230,22 @@ rmg_mentry_unref (RmgMEntry *mentry)
       if (mentry->proxy != NULL)
         g_object_unref (mentry->proxy);
 
+      if (mentry->manager_proxy != NULL)
+        g_object_unref (mentry->manager_proxy);
+
       if (mentry->dispatcher != NULL)
         rmg_dispatcher_unref ((RmgDispatcher *)mentry->dispatcher);
 
       g_free (mentry);
     }
+}
+
+void
+rmg_mentry_set_manager_proxy (RmgMEntry *mentry,
+                              GDBusProxy *manager_proxy)
+{
+  g_assert (mentry);
+  mentry->manager_proxy = g_object_ref (manager_proxy);
 }
 
 RmgStatus

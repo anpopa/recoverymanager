@@ -95,6 +95,12 @@ void rmg_monitor_unref (RmgMonitor *monitor);
 void rmg_monitor_build_proxy (RmgMonitor *monitor);
 
 /**
+ * @brief Get a reference to manager proxy
+ * @param monitor Pointer to the monitor object
+ */
+GDBusProxy *rmg_monitor_get_manager_proxy (RmgMonitor *monitor);
+
+/**
  * @brief Get existing services
  * @param monitor Pointer to the monitor object
  */

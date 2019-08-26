@@ -29,6 +29,7 @@
 
 #include "rmg-monitor.h"
 #include "rmg-mentry.h"
+#include "rmg-devent.h"
 
 const gchar *sd_dbus_name = "org.freedesktop.systemd1";
 const gchar *sd_dbus_object_path = "/org/freedesktop/systemd1";
@@ -266,6 +267,13 @@ monitor_build_proxy (RmgMonitor *monitor)
     }
 }
 
+GDBusProxy *
+rmg_monitor_get_manager_proxy (RmgMonitor *monitor)
+{
+  g_assert (monitor);
+  return monitor->proxy;
+}
+
 static void
 add_service (RmgMonitor *monitor,
              const gchar *service_name,
@@ -293,6 +301,8 @@ add_service (RmgMonitor *monitor,
                                          active_state,
                                          active_substate);
 
+      rmg_mentry_set_manager_proxy (entry, rmg_monitor_get_manager_proxy (monitor));
+
       if (rmg_mentry_build_proxy (entry, monitor->dispatcher) != RMG_STATUS_OK)
         {
           g_warning ("Fail to build proxy for new service '%s'", service_name);
@@ -310,7 +320,7 @@ static void
 monitor_read_services (RmgMonitor *monitor)
 {
   g_autoptr (GError) error = NULL;
-  GVariant *service_list;
+  g_autoptr (GVariant) service_list;
 
   g_assert (monitor);
 
@@ -424,9 +434,11 @@ rmg_monitor_unref (RmgMonitor *monitor)
       if (monitor->dispatcher != NULL)
         rmg_dispatcher_unref (monitor->dispatcher);
 
+      if (monitor->proxy != NULL)
+        g_object_unref (monitor->proxy);
+
       g_async_queue_unref (monitor->queue);
       g_list_free_full (monitor->services, remove_service_entry);
-
       g_source_unref (RMG_EVENT_SOURCE (monitor));
     }
 }

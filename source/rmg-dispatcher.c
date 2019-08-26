@@ -28,18 +28,12 @@
  */
 
 #include "rmg-dispatcher.h"
+#include "rmg-utils.h"
 
 /**
  * @brief Post new event
- *
- * @param dispatcher A pointer to the dispatcher object
- * @param type The type of the new event to be posted
- * @param service_name The service name having this event
  */
-static void post_dispatcher_event (RmgDispatcher *dispatcher,
-                                   DispatcherEventType type,
-                                   const gchar *service_name,
-                                   const gchar *object_path);
+static void post_dispatcher_event (RmgDispatcher *dispatcher, RmgDEvent *event);
 
 /**
  * @brief GSource prepare function
@@ -67,6 +61,11 @@ static void dispatcher_source_destroy_notify (gpointer _dispatcher);
 static void dispatcher_queue_destroy_notify (gpointer _dispatcher);
 
 /**
+ * @brief Handle service crash event
+ */
+static void do_process_service_crash_event (RmgDispatcher *dispatcher, RmgDEvent *event);
+
+/**
  * @brief GSourceFuncs vtable
  */
 static GSourceFuncs dispatcher_source_funcs =
@@ -80,23 +79,12 @@ static GSourceFuncs dispatcher_source_funcs =
 };
 
 static void
-post_dispatcher_event (RmgDispatcher *dispatcher,
-                       DispatcherEventType type,
-                       const gchar *service_name,
-                       const gchar *object_path)
+post_dispatcher_event (RmgDispatcher *dispatcher, RmgDEvent *event)
 {
-  RmgDispatcherEvent *e = NULL;
-
   g_assert (dispatcher);
-  g_assert (service_name);
+  g_assert (event);
 
-  e = g_new0 (RmgDispatcherEvent, 1);
-
-  e->type = type;
-  e->service_name = g_strdup (service_name);
-  e->object_path = g_strdup (object_path);
-
-  g_async_queue_push (dispatcher->queue, e);
+  g_async_queue_push (dispatcher->queue, event);
 }
 
 static gboolean
@@ -132,7 +120,7 @@ dispatcher_source_callback (gpointer _dispatcher,
                             gpointer _event)
 {
   RmgDispatcher *dispatcher = (RmgDispatcher *)_dispatcher;
-  RmgDispatcherEvent *event = (RmgDispatcherEvent *)_event;
+  RmgDEvent *event = (RmgDEvent *)_event;
 
   g_assert (dispatcher);
   g_assert (event);
@@ -140,20 +128,19 @@ dispatcher_source_callback (gpointer _dispatcher,
   switch (event->type)
     {
     case DISPATCHER_EVENT_SERVICE_INACTIVE:
-      g_info ("Service '%s' crashed", event->service_name);
+      g_info ("Service '%s' crash event detected", event->service_name);
+      do_process_service_crash_event (dispatcher, event);
       break;
 
     case DISPATCHER_EVENT_SERVICE_ACTIVE:
-      g_info ("Service '%s' (re)started", event->service_name);
+      g_info ("Service '%s' restarted", event->service_name);
       break;
 
     default:
       break;
     }
 
-  g_free (event->service_name);
-  g_free (event->object_path);
-  g_free (event);
+  rmg_devent_unref (event);
 
   return TRUE;
 }
@@ -219,6 +206,63 @@ run_mode_specific_init (RmgDispatcher *dispatcher, GError **error)
     }
 
   return status;
+}
+
+static void
+do_process_service_crash_event (RmgDispatcher *dispatcher, RmgDEvent *event)
+{
+  RmgActionType action_type = ACTION_INVALID;
+
+  g_autoptr (GError) error = NULL;
+  glong rvector = 0;
+
+  g_assert (dispatcher);
+  g_assert (event);
+
+  /* we increment the rvector for this service */
+  rvector = rmg_journal_get_rvector (dispatcher->journal, event->service_name, &error);
+  if (error != NULL)
+    {
+      g_warning ("Fail to read the rvector for service %s. Error %s", event->service_name, error->message);
+      g_return_if_reached ();
+    }
+
+  rmg_journal_set_rvector (dispatcher->journal, event->service_name, (rvector + 1), &error);
+  if (error != NULL)
+    {
+      g_warning ("Fail to increment the rvector for service %s. Error %s", event->service_name, error->message);
+      g_return_if_reached ();
+    }
+
+  rvector += 1;
+
+  /* read next applicable action and execute */
+  action_type = rmg_journal_get_service_action (dispatcher->journal, event->service_name, &error);
+  if (error != NULL)
+    {
+      g_warning ("Fail to read next service action %s. Error %s", event->service_name, error->message);
+      g_return_if_reached ();
+    }
+
+  if (action_type != ACTION_INVALID)
+    {
+      g_info ("Action '%s' requiered for service='%s' rvector=%ld",
+              rmg_utils_action_name (action_type),
+              event->service_name,
+              rvector);
+    }
+
+  switch (action_type)
+    {
+    case ACTION_SERVICE_RESET:
+      g_info ("Service action '%s' requiered for recovery vector value=%ld", event->service_name, rvector);
+      rmg_executor_push_event (dispatcher->executor, EXECUTOR_EVENT_SERVICE_RESTART, event);
+      break;
+
+    case ACTION_INVALID:
+    default:
+      break;
+    }
 }
 
 RmgDispatcher *
@@ -295,10 +339,7 @@ rmg_dispatcher_unref (RmgDispatcher *dispatcher)
 }
 
 void
-rmg_dispatcher_push_service_event (RmgDispatcher *dispatcher,
-                                   DispatcherEventType type,
-                                   const gchar *service_name,
-                                   const gchar *object_path)
+rmg_dispatcher_push_service_event (RmgDispatcher *dispatcher, RmgDEvent *event)
 {
-  post_dispatcher_event (dispatcher, type, service_name, object_path);
+  post_dispatcher_event (dispatcher, event);
 }

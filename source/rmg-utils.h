@@ -101,4 +101,11 @@ RmgStatus rmg_utils_chown (const gchar *file_path, const gchar *user_name, const
  */
 RmgActionType rmg_utils_action_type_from (const gchar *name);
 
+/**
+ * @brief Get action type from string name
+ * @param type Action type
+ * @return Const action name
+ */
+const gchar *rmg_utils_action_name (RmgActionType type);
+
 G_END_DECLS

@@ -60,6 +60,7 @@ typedef enum _ServiceActiveSubstate {
 typedef struct _RmgMEntry {
   grefcount rc;     /**< Reference counter variable  */
   GDBusProxy *proxy;
+  GDBusProxy *manager_proxy;
   gpointer dispatcher;
   gchar *service_name;
   gchar *object_path;
@@ -89,6 +90,11 @@ RmgMEntry *rmg_mentry_ref (RmgMEntry *mentry);
  * @param mentry Pointer to the mentry object
  */
 void rmg_mentry_unref (RmgMEntry *mentry);
+
+/**
+ * @brief Set a reference to manager proxy to pass to dispatcher event
+ */
+void rmg_mentry_set_manager_proxy (RmgMEntry *mentry, GDBusProxy *manager_proxy);
 
 /*
  * @brief Get service active state from string

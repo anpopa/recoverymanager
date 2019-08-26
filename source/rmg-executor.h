@@ -29,9 +29,11 @@
 
 #pragma once
 
+#include "rmg-devent.h"
 #include "rmg-types.h"
 
 #include <glib.h>
+#include <gio/gio.h>
 
 G_BEGIN_DECLS
 
@@ -40,7 +42,7 @@ G_BEGIN_DECLS
  * @brief Executor event data type
  */
 typedef enum _ExecutorEventType {
-  EXECUTOR_EVENT_SERVICE_UPDATE,
+  EXECUTOR_EVENT_SERVICE_RESTART,
   EXECUTOR_EVENT_SERVICE_RELAXED
 } ExecutorEventType;
 
@@ -55,9 +57,10 @@ typedef gboolean (*RmgExecutorCallback) (gpointer _executor, gpointer _event);
  * @brief The file transfer event
  */
 typedef struct _RmgExecutorEvent {
-  ExecutorEventType type;     /**< The event type the element holds */
-  gchar *service_name;     /**< Service name for the event */
+  ExecutorEventType type;      /**< The event type the element holds */
+  RmgDEvent *dispatcher_event; /**< Event object from dispatcher */
 } RmgExecutorEvent;
+
 /**
  * @struct RmgExecutor
  * @brief The RmgExecutor opaque data structure
@@ -86,6 +89,11 @@ RmgExecutor *rmg_executor_ref (RmgExecutor *executor);
  * @param c Pointer to the executor object
  */
 void rmg_executor_unref (RmgExecutor *executor);
+
+/**
+ * @brief Push an executor event
+ */
+void rmg_executor_push_event (RmgExecutor *executor, ExecutorEventType type, RmgDEvent *dispatcher_event);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgExecutor, rmg_executor_unref);
 

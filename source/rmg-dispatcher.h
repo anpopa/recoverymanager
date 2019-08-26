@@ -34,6 +34,7 @@
 #include "rmg-executor.h"
 #include "rmg-server.h"
 #include "rmg-manager.h"
+#include "rmg-devent.h"
 #include "rmg-types.h"
 
 #include <glib.h>
@@ -41,31 +42,11 @@
 G_BEGIN_DECLS
 
 /**
- * @enum dispatcher_event_data
- * @brief Dispatcher event data type
- */
-typedef enum _DispatcherEventType {
-  DISPATCHER_EVENT_UNKNOWN,
-  DISPATCHER_EVENT_SERVICE_INACTIVE,
-  DISPATCHER_EVENT_SERVICE_ACTIVE,
-  DISPATCHER_EVENT_SERVICE_RELAXED
-} DispatcherEventType;
-
-/**
  * @function RmgDispatcherCallback
  * @brief Custom callback used internally by RmgDispatcher as source callback
  */
 typedef gboolean (*RmgDispatcherCallback) (gpointer _dispatcher, gpointer _event);
 
-/**
- * @struct RmgDispatcherEvent
- * @brief The file transfer event
- */
-typedef struct _RmgDispatcherEvent {
-  DispatcherEventType type;     /**< The event type the element holds */
-  gchar *service_name;     /**< Service name for the event */
-  gchar *object_path;     /**< Service object path */
-} RmgDispatcherEvent;
 /**
  * @struct RmgDispatcher
  * @brief The RmgDispatcher opaque data structure
@@ -81,6 +62,7 @@ typedef struct _RmgDispatcher {
   RmgManager *manager;
   grefcount rc;     /**< Reference counter variable  */
 } RmgDispatcher;
+
 
 /*
  * @brief Create a new dispatcher object
@@ -107,10 +89,7 @@ void rmg_dispatcher_unref (RmgDispatcher *dispatcher);
  * @brief Push a service event
  * @param c Pointer to the dispatcher object
  */
-void rmg_dispatcher_push_service_event (RmgDispatcher *dispatcher,
-                                        DispatcherEventType type,
-                                        const gchar *service_name,
-                                        const gchar *object_path);
+void rmg_dispatcher_push_service_event (RmgDispatcher *dispatcher, RmgDEvent *event);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgDispatcher, rmg_dispatcher_unref);
 

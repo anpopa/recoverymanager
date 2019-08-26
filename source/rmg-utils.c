@@ -71,6 +71,12 @@ rmg_utils_action_type_from (const gchar *name)
   return ACTION_INVALID;
 }
 
+const gchar *
+rmg_utils_action_name (RmgActionType type)
+{
+  return g_action_name[type];
+}
+
 gchar *
 rmg_utils_get_procname (gint64 pid)
 {
