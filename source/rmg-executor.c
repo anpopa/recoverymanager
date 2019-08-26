@@ -89,14 +89,49 @@ static void do_process_service_disable_event (RmgExecutor *executor, RmgDEvent *
 static void do_process_context_restart_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
 
 /**
+ * @brief Process service context restart master
+ */
+static void do_process_context_restart_event_master (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
+ * @brief Process service context restart slave
+ */
+static void do_process_context_restart_event_slave (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
  * @brief Process service platform restart event
  */
 static void do_process_platform_restart_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
 
 /**
+ * @brief Process service platform restart event master
+ */
+static void do_process_platform_restart_event_master (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
+ * @brief Process service platform restart event slave
+ */
+static void do_process_platform_restart_event_slave (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
  * @brief Process service factory reset event
  */
 static void do_process_factory_reset_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
+ * @brief Process service factory reset event master
+ */
+static void do_process_factory_reset_event_master (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
+ * @brief Process service factory reset event slave
+ */
+static void do_process_factory_reset_event_slave (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+
+/**
+ * @brief Enter meditation state
+ */
+static void enter_meditation (RmgExecutor *executor, RmgDEvent *dispatcher_event);
 
 /**
  * @brief GSourceFuncs vtable
@@ -208,19 +243,125 @@ executor_source_callback (gpointer _executor,
 }
 
 static void
+enter_meditation (RmgExecutor *executor, RmgDEvent *dispatcher_event)
+{
+  g_assert (executor);
+  g_assert (dispatcher_event);
+
+  g_info ("Executor enter meditation state after executing action for service='%s'",
+          dispatcher_event->service_name);
+  sleep (5);
+  raise (SIGTERM);
+}
+
+static void
 do_process_service_reset_public_data_event (RmgExecutor *executor,
                                             RmgDEvent *dispatcher_event)
 {
-  RMG_UNUSED (executor);
-  RMG_UNUSED (dispatcher_event);
+  g_autoptr (GError) error = NULL;
+  g_autofree gchar *reset_path = NULL;
+  g_autofree gchar *reset_cmd = NULL;
+  g_autofree gchar *reset_with_path_cmd = NULL;
+  g_autofree gchar *reset_with_name_cmd = NULL;
+  g_autofree gchar *standard_output = NULL;
+  g_autofree gchar *command_line = NULL;
+  gchar **path_tokens = NULL;
+  gchar **name_tokens = NULL;
+  gint exit_status;
+
+  g_assert (executor);
+  g_assert (dispatcher_event);
+
+  reset_path = rmg_journal_get_public_data_path (executor->journal,
+                                                 dispatcher_event->service_name,
+                                                 &error);
+  if (error != NULL)
+    {
+      g_warning ("Fail to read public data path for service %s. Error %s",
+                 dispatcher_event->service_name,
+                 error->message);
+      g_return_if_reached ();
+    }
+
+  reset_cmd = rmg_options_string_for (executor->options, KEY_PUBLIC_DATA_RESET_CMD);
+
+  path_tokens = g_strsplit (reset_cmd, "${path}", 3);
+  reset_with_path_cmd = g_strjoinv (reset_path, path_tokens);
+  g_strfreev (path_tokens);
+
+  name_tokens = g_strsplit (reset_with_path_cmd, "${service_name}", 3);
+  reset_with_name_cmd = g_strjoinv (dispatcher_event->service_name, name_tokens);
+  g_strfreev (name_tokens);
+
+  g_info ("Reset public data for service='%s' command='%s'",
+          dispatcher_event->service_name,
+          reset_with_name_cmd);
+
+  command_line = g_strdup_printf ("sh -c \"%s\"", reset_with_name_cmd);
+
+  g_spawn_command_line_sync (command_line, &standard_output, NULL, &exit_status, &error);
+  if (error != NULL)
+    g_warning ("Fail to spawn process. Error %s", error->message);
+  else
+    g_info ("Stdout: %s", standard_output);
+
+  /* do service restart */
+  do_process_service_restart_event (executor, dispatcher_event);
 }
 
 static void
 do_process_service_reset_private_data_event (RmgExecutor *executor,
                                              RmgDEvent *dispatcher_event)
 {
-  RMG_UNUSED (executor);
-  RMG_UNUSED (dispatcher_event);
+  g_autoptr (GError) error = NULL;
+  g_autofree gchar *reset_path = NULL;
+  g_autofree gchar *reset_cmd = NULL;
+  g_autofree gchar *reset_with_path_cmd = NULL;
+  g_autofree gchar *reset_with_name_cmd = NULL;
+  g_autofree gchar *standard_output = NULL;
+  g_autofree gchar *command_line = NULL;
+  gchar **path_tokens = NULL;
+  gchar **name_tokens = NULL;
+  gint exit_status;
+
+  g_assert (executor);
+  g_assert (dispatcher_event);
+
+  reset_path = rmg_journal_get_private_data_path (executor->journal,
+                                                  dispatcher_event->service_name,
+                                                  &error);
+  if (error != NULL)
+    {
+      g_warning ("Fail to read private data path for service %s. Error %s",
+                 dispatcher_event->service_name,
+                 error->message);
+      g_return_if_reached ();
+    }
+
+  reset_cmd = rmg_options_string_for (executor->options, KEY_PRIVATE_DATA_RESET_CMD);
+
+  path_tokens = g_strsplit (reset_cmd, "${path}", 3);
+  reset_with_path_cmd = g_strjoinv (reset_path, path_tokens);
+  g_strfreev (path_tokens);
+
+  name_tokens = g_strsplit (reset_with_path_cmd, "${service_name}", 3);
+  reset_with_name_cmd = g_strjoinv (dispatcher_event->service_name, name_tokens);
+  g_strfreev (name_tokens);
+
+  g_info ("Reset private data for service='%s' command='%s'",
+          dispatcher_event->service_name,
+          reset_with_name_cmd);
+
+  command_line = g_strdup_printf ("sh -c \"%s\"", reset_with_name_cmd);
+
+  g_spawn_command_line_sync (command_line, &standard_output, NULL, &exit_status, &error);
+  if (error != NULL)
+    g_warning ("Fail to spawn process. Error %s", error->message);
+  else
+    g_info ("Stdout: %s", standard_output);
+
+  /* do service restart */
+  do_process_service_restart_event (executor, dispatcher_event);
 }
 
 static void
@@ -228,12 +369,70 @@ do_process_service_disable_event (RmgExecutor *executor,
                                   RmgDEvent *dispatcher_event)
 {
   RMG_UNUSED (executor);
-  RMG_UNUSED (dispatcher_event);
+  g_info ("Service '%s' remain disable this lifecycle", dispatcher_event->service_name);
 }
 
 static void
 do_process_context_restart_event (RmgExecutor *executor,
                                   RmgDEvent *dispatcher_event)
+{
+  if (g_run_mode == RUN_MODE_MASTER)
+    do_process_context_restart_event_master (executor, dispatcher_event);
+  else
+    do_process_context_restart_event_slave (executor, dispatcher_event);
+}
+
+static void
+do_process_context_restart_event_master (RmgExecutor *executor,
+                                         RmgDEvent *dispatcher_event)
+{
+  RMG_UNUSED (executor);
+  RMG_UNUSED (dispatcher_event);
+}
+
+static void
+do_process_context_restart_event_slave (RmgExecutor *executor,
+                                        RmgDEvent *dispatcher_event)
+{
+  RMG_UNUSED (executor);
+  RMG_UNUSED (dispatcher_event);
+}
+
+static void
+do_process_platform_restart_event_master (RmgExecutor *executor,
+                                          RmgDEvent *dispatcher_event)
+{
+  g_autoptr (GError) error = NULL;
+  g_autofree gchar *reset_cmd = NULL;
+  g_autofree gchar *standard_output = NULL;
+  g_autofree gchar *command_line = NULL;
+  gint exit_status;
+
+  g_assert (executor);
+  g_assert (dispatcher_event);
+
+  reset_cmd = rmg_options_string_for (executor->options, KEY_PLATFORM_RESTART_CMD);
+
+  g_info ("Do platform restart on service='%s' request. Command='%s'",
+          dispatcher_event->service_name,
+          reset_cmd);
+
+  command_line = g_strdup_printf ("sh -c \"%s\"", reset_cmd);
+
+  g_spawn_command_line_sync (command_line, &standard_output, NULL, &exit_status, &error);
+  if (error != NULL)
+    {
+      g_warning ("Fail to spawn process. Error %s", error->message);
+    }
+  else
+    {
+      g_info ("Stdout: %s", standard_output);
+    }
+}
+
+static void
+do_process_platform_restart_event_slave (RmgExecutor *executor,
+                                         RmgDEvent *dispatcher_event)
 {
   RMG_UNUSED (executor);
   RMG_UNUSED (dispatcher_event);
@@ -243,6 +442,50 @@ static void
 do_process_platform_restart_event (RmgExecutor *executor,
                                    RmgDEvent *dispatcher_event)
 {
+  if (g_run_mode == RUN_MODE_MASTER)
+    do_process_platform_restart_event_master (executor, dispatcher_event);
+  else
+    do_process_platform_restart_event_slave (executor, dispatcher_event);
+
+  enter_meditation (executor, dispatcher_event);
+}
+
+static void
+do_process_factory_reset_event_master (RmgExecutor *executor,
+                                       RmgDEvent *dispatcher_event)
+{
+  g_autoptr (GError) error = NULL;
+  g_autofree gchar *reset_cmd = NULL;
+  g_autofree gchar *standard_output = NULL;
+  g_autofree gchar *command_line = NULL;
+  gint exit_status;
+
+  g_assert (executor);
+  g_assert (dispatcher_event);
+
+  reset_cmd = rmg_options_string_for (executor->options, KEY_FACTORY_RESET_CMD);
+
+  g_info ("Do factory reset on service='%s' request. Command='%s'",
+          dispatcher_event->service_name,
+          reset_cmd);
+
+  command_line = g_strdup_printf ("sh -c \"%s\"", reset_cmd);
+
+  g_spawn_command_line_sync (command_line, &standard_output, NULL, &exit_status, &error);
+  if (error != NULL)
+    {
+      g_warning ("Fail to spawn process. Error %s", error->message);
+    }
+  else
+    {
+      g_info ("Stdout: %s", standard_output);
+    }
+}
+
+static void
+do_process_factory_reset_event_slave (RmgExecutor *executor,
+                                      RmgDEvent *dispatcher_event)
+{
   RMG_UNUSED (executor);
   RMG_UNUSED (dispatcher_event);
 }
@@ -251,8 +494,12 @@ static void
 do_process_factory_reset_event (RmgExecutor *executor,
                                 RmgDEvent *dispatcher_event)
 {
-  RMG_UNUSED (executor);
-  RMG_UNUSED (dispatcher_event);
+  if (g_run_mode == RUN_MODE_MASTER)
+    do_process_factory_reset_event_master (executor, dispatcher_event);
+  else
+    do_process_factory_reset_event_slave (executor, dispatcher_event);
+
+  enter_meditation (executor, dispatcher_event);
 }
 
 static void
