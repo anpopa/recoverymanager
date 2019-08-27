@@ -44,8 +44,10 @@ rmg_jentry_new (gulong version)
 
   jentry->hash = version;
   jentry->relaxing = FALSE;
-  jentry->rvector = 0;
   jentry->actions = NULL;
+
+  /* the first action will start when rvector 1 */
+  jentry->rvector = 1;
 
   return jentry;
 }

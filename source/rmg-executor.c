@@ -252,9 +252,9 @@ enter_meditation (RmgExecutor *executor, RmgDEvent *dispatcher_event)
   g_assert (executor);
   g_assert (dispatcher_event);
 
-  g_info ("Executor enter meditation state after executing action for service='%s'",
+  g_info ("Recoverymanager enter meditation state after executing action for service='%s'",
           dispatcher_event->service_name);
-  sleep (5);
+
   raise (SIGTERM);
 }
 
@@ -500,13 +500,9 @@ do_process_platform_restart_event_master (RmgExecutor *executor,
 
   g_spawn_command_line_sync (command_line, &standard_output, NULL, &exit_status, &error);
   if (error != NULL)
-    {
-      g_warning ("Fail to spawn process. Error %s", error->message);
-    }
+    g_warning ("Fail to spawn process. Error %s", error->message);
   else
-    {
-      g_info ("Stdout: %s", standard_output);
-    }
+    g_info ("Platform restart exitcode=%d output='%s'", exit_status, standard_output);
 }
 
 static void
@@ -582,13 +578,9 @@ do_process_factory_reset_event_master (RmgExecutor *executor,
 
   g_spawn_command_line_sync (command_line, &standard_output, NULL, &exit_status, &error);
   if (error != NULL)
-    {
-      g_warning ("Fail to spawn process. Error %s", error->message);
-    }
+    g_warning ("Fail to spawn process. Error %s", error->message);
   else
-    {
-      g_info ("Stdout: %s", standard_output);
-    }
+    g_info ("Factory reset exitcode=%d output='%s'", exit_status, standard_output);
 }
 
 static void
