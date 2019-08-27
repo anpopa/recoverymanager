@@ -28,6 +28,7 @@
  */
 
 #include "rmg-dispatcher.h"
+#include "rmg-relaxtimer.h"
 #include "rmg-utils.h"
 
 /**
@@ -251,14 +252,18 @@ do_process_service_crash_event (RmgDispatcher *dispatcher, RmgDEvent *event)
   rvector = rmg_journal_get_rvector (dispatcher->journal, event->service_name, &error);
   if (error != NULL)
     {
-      g_warning ("Fail to read the rvector for service %s. Error %s", event->service_name, error->message);
+      g_warning ("Fail to read the rvector for service %s. Error %s",
+                 event->service_name,
+                 error->message);
       g_return_if_reached ();
     }
 
   rmg_journal_set_rvector (dispatcher->journal, event->service_name, (rvector + 1), &error);
   if (error != NULL)
     {
-      g_warning ("Fail to increment the rvector for service %s. Error %s", event->service_name, error->message);
+      g_warning ("Fail to increment the rvector for service %s. Error %s",
+                 event->service_name,
+                 error->message);
       g_return_if_reached ();
     }
 
@@ -268,7 +273,9 @@ do_process_service_crash_event (RmgDispatcher *dispatcher, RmgDEvent *event)
   action_type = rmg_journal_get_service_action (dispatcher->journal, event->service_name, &error);
   if (error != NULL)
     {
-      g_warning ("Fail to read next service action %s. Error %s", event->service_name, error->message);
+      g_warning ("Fail to read next service action %s. Error %s",
+                 event->service_name,
+                 error->message);
       g_return_if_reached ();
     }
 
@@ -314,6 +321,14 @@ do_process_service_crash_event (RmgDispatcher *dispatcher, RmgDEvent *event)
     default:
       break;
     }
+
+  rmg_relaxtimer_trigger (dispatcher->journal, event->service_name, &error);
+  if (error != NULL)
+    {
+      g_warning ("Fail to trigger relax timer for service %s. Error %s",
+                 event->service_name,
+                 error->message);
+    }
 }
 
 RmgDispatcher *
@@ -322,7 +337,8 @@ rmg_dispatcher_new (RmgOptions *options,
                     RmgExecutor *executor,
                     GError **error)
 {
-  RmgDispatcher *dispatcher = (RmgDispatcher *)g_source_new (&dispatcher_source_funcs, sizeof(RmgDispatcher));
+  RmgDispatcher *dispatcher = (RmgDispatcher *)g_source_new (&dispatcher_source_funcs,
+                                                             sizeof(RmgDispatcher));
 
   g_assert (dispatcher);
 

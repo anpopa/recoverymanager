@@ -43,7 +43,8 @@ G_BEGIN_DECLS
 typedef struct _RmgRelaxTimer {
   RmgJournal *journal;
   gchar *service_name;
-  glong *rvector_armed;
+  glong rvector;
+  glong timeout;
   grefcount rc;     /**< Reference counter variable  */
 } RmgRelaxTimer;
 
@@ -51,27 +52,6 @@ typedef struct _RmgRelaxTimer {
  * @brief Create a new relaxtimer object
  * @return On success return a new RmgRelaxTimer object otherwise return NULL
  */
-RmgRelaxTimer *rmg_relaxtimer_new (void);
-
-/**
- * @brief Aquire relaxtimer object
- * @param relaxtimer Pointer to the relaxtimer object
- * @return The referenced relaxtimer object
- */
-RmgRelaxTimer *rmg_relaxtimer_ref (RmgRelaxTimer *relaxtimer);
-
-/**
- * @brief Release relaxtimer object
- * @param relaxtimer Pointer to the relaxtimer object
- */
-void rmg_relaxtimer_unref (RmgRelaxTimer *relaxtimer);
-
-/**
- * @brief Release relaxtimer object
- * @param relaxtimer Pointer to the relaxtimer object
- */
-void rmg_relaxtimer_trigger_from_journal (RmgRelaxTimer *relaxtimer, const gchar *service_name, RmgJournal *journal);
-
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgRelaxTimer, rmg_relaxtimer_unref);
+guint rmg_relaxtimer_trigger (RmgJournal *journal, const gchar *service_name, GError **error);
 
 G_END_DECLS

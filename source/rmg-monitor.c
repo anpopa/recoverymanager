@@ -30,6 +30,7 @@
 #include "rmg-monitor.h"
 #include "rmg-mentry.h"
 #include "rmg-devent.h"
+#include "rmg-relaxtimer.h"
 
 const gchar *sd_dbus_name = "org.freedesktop.systemd1";
 const gchar *sd_dbus_object_path = "/org/freedesktop/systemd1";
@@ -78,6 +79,11 @@ static void monitor_build_proxy (RmgMonitor *monitor);
  * @brief Read services local
  */
 static void monitor_read_services (RmgMonitor *monitor);
+
+/**
+ * @brief Start relax timers
+ */
+static void monitor_start_relax_timers (RmgMonitor *monitor);
 
 /**
  * @brief Add service if not exist
@@ -161,6 +167,7 @@ monitor_source_callback (gpointer _monitor,
 
     case MONITOR_EVENT_READ_SERVICES:
       monitor_read_services (monitor);
+      monitor_start_relax_timers (monitor);
       break;
 
     default:
@@ -384,6 +391,38 @@ monitor_read_services (RmgMonitor *monitor)
             }
         }
     }
+}
+
+static void
+monitor_add_relax_timer (gpointer _journal, gpointer _data)
+{
+  RmgJournal *journal = (RmgJournal *)_journal;
+  const gchar *service_name = (const gchar*)_data;
+
+  g_autoptr (GError) error = NULL;
+
+  rmg_relaxtimer_trigger (journal, service_name, &error);
+  if (error != 0)
+    {
+      g_warning ("Fail to trigger relaxtimer for service %s. Error %s",
+                 service_name,
+                 error->message);
+    }
+}
+
+static void
+monitor_start_relax_timers (RmgMonitor *monitor)
+{
+  g_autoptr (GError) error = NULL;
+
+  g_assert (monitor);
+
+  rmg_journal_call_foreach_relaxing (monitor->dispatcher->journal,
+                                     monitor_add_relax_timer,
+                                     &error);
+
+  if (error != 0)
+    g_warning ("Fail to start relax timers. Error %s", error->message);
 }
 
 static void

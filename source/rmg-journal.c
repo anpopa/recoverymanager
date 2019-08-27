@@ -43,12 +43,11 @@ typedef enum _JournalQueryType {
   QUERY_ADD_ACTION,
   QUERY_GET_PRIVATE_DATA,
   QUERY_GET_PUBLIC_DATA,
-  QUERY_GET_RELAXING,
-  QUERY_SET_RELAXING,
   QUERY_GET_TIMEOUT,
   QUERY_GET_RVECTOR,
   QUERY_SET_RVECTOR,
   QUERY_GET_ACTION,
+  QUERY_CALL_RELAXING,
 } JournalQueryType;
 
 /**
@@ -57,6 +56,8 @@ typedef enum _JournalQueryType {
 typedef struct _JournalQueryData {
   JournalQueryType type;
   gpointer response;
+  RmgJournal *journal;
+  RmgJournalCallback callback;
 } JournalQueryData;
 
 /**
@@ -149,17 +150,6 @@ sqlite_callback (void *data, int argc, char **argv, char **colname)
         }
       break;
 
-    case QUERY_GET_RELAXING:
-      for (gint i = 0; i < argc; i++)
-        {
-          if (g_strcmp0 (colname[i], "RELAXING") == 0)
-            *((gboolean *)(querydata->response)) = (gboolean)g_ascii_strtoll (argv[i], NULL, 10);
-        }
-      break;
-
-    case QUERY_SET_RELAXING:
-      break;
-
     case QUERY_GET_TIMEOUT:
       for (gint i = 0; i < argc; i++)
         {
@@ -187,6 +177,17 @@ sqlite_callback (void *data, int argc, char **argv, char **colname)
         }
       break;
 
+    case QUERY_CALL_RELAXING:
+      for (gint i = 0; i < argc; i++)
+        {
+          if (g_strcmp0 (colname[i], "NAME") == 0)
+            {
+              if (querydata->callback != NULL)
+                querydata->callback (querydata->journal, (gpointer)argv[i]);
+            }
+        }
+      break;
+
     default:
       break;
     }
@@ -201,8 +202,11 @@ rmg_journal_new (RmgOptions *options, GError **error)
   g_autofree gchar *opt_dbdir = NULL;
   g_autofree gchar *dbfile = NULL;
   gchar *query_error = NULL;
+
   JournalQueryData data = {
     .type = QUERY_CREATE_TABLES,
+    .journal = journal,
+    .callback = NULL,
     .response = NULL
   };
 
@@ -231,7 +235,6 @@ rmg_journal_new (RmgOptions *options, GError **error)
                                       " PRIVDATA  TEXT            NOT NULL, "
                                       " PUBLDATA  TEXT            NOT NULL, "
                                       " RVECTOR   NUMERIC         NOT NULL, "
-                                      " RELAXING  BOOL            NOT NULL, "
                                       " TIMEOUT   NUMERIC         NOT NULL);",
                                       rmg_table_services);
 
@@ -495,8 +498,11 @@ rmg_journal_add_service (RmgJournal *journal,
 {
   g_autofree gchar *sql = NULL;
   gchar *query_error = NULL;
+
   JournalQueryData data = {
     .type = QUERY_ADD_SERVICE,
+    .journal = journal,
+    .callback = NULL,
     .response = NULL
   };
 
@@ -505,16 +511,15 @@ rmg_journal_add_service (RmgJournal *journal,
   g_assert (private_data);
   g_assert (public_data);
 
-  sql = g_strdup_printf ("INSERT INTO %s                                          "
-                         "(HASH,NAME,PRIVDATA,PUBLDATA,RVECTOR,RELAXING,TIMEOUT)  "
-                         "VALUES(%ld, '%s', '%s', '%s', %ld, %d, %ld);           ",
+  sql = g_strdup_printf ("INSERT INTO %s                                 "
+                         "(HASH,NAME,PRIVDATA,PUBLDATA,RVECTOR,TIMEOUT)  "
+                         "VALUES(%ld, '%s', '%s', '%s', %ld, %ld);       ",
                          rmg_table_services,
                          (glong)hash,
                          service_name,
                          private_data,
                          public_data,
                          (glong)0,
-                         0,
                          timeout);
 
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error) != SQLITE_OK)
@@ -540,8 +545,11 @@ rmg_journal_add_action (RmgJournal *journal,
 {
   g_autofree gchar *sql = NULL;
   gchar *query_error = NULL;
+
   JournalQueryData data = {
     .type = QUERY_ADD_ACTION,
+    .journal = journal,
+    .callback = NULL,
     .response = NULL
   };
 
@@ -577,8 +585,11 @@ rmg_journal_get_private_data_path (RmgJournal *journal,
 {
   g_autofree gchar *sql = NULL;
   gchar *query_error = NULL;
+
   JournalQueryData data = {
     .type = QUERY_GET_PRIVATE_DATA,
+    .journal = journal,
+    .callback = NULL,
     .response = NULL
   };
 
@@ -609,8 +620,11 @@ rmg_journal_get_public_data_path (RmgJournal *journal,
 {
   g_autofree gchar *sql = NULL;
   gchar *query_error = NULL;
+
   JournalQueryData data = {
     .type = QUERY_GET_PUBLIC_DATA,
+    .journal = journal,
+    .callback = NULL,
     .response = NULL
   };
 
@@ -634,76 +648,6 @@ rmg_journal_get_public_data_path (RmgJournal *journal,
   return (gchar *)data.response;
 }
 
-gboolean
-rmg_journal_get_relaxing_state (RmgJournal *journal,
-                                const gchar *service_name,
-                                GError **error)
-{
-  g_autofree gchar *sql = NULL;
-  gchar *query_error = NULL;
-  gboolean state = FALSE;
-  JournalQueryData data = {
-    .type = QUERY_GET_RELAXING,
-    .response = NULL
-  };
-
-  g_assert (journal);
-  g_assert (service_name);
-
-  data.response = (gpointer) & state;
-
-  sql = g_strdup_printf ("SELECT RELAXING FROM %s WHERE NAME IS '%s'",
-                         rmg_table_services, service_name);
-
-  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
-      != SQLITE_OK)
-    {
-      g_set_error (error,
-                   g_quark_from_static_string ("JournalGetRelaxingState"),
-                   1,
-                   "SQL query error");
-      g_warning ("Fail to get relaxing state. SQL error %s", query_error);
-      sqlite3_free (query_error);
-    }
-
-  return state;
-}
-
-RmgStatus
-rmg_journal_set_relaxing_state (RmgJournal *journal,
-                                const gchar *service_name,
-                                gboolean relaxing_status,
-                                GError **error)
-{
-  g_autofree gchar *sql = NULL;
-  gchar *query_error = NULL;
-  RmgStatus status = RMG_STATUS_OK;
-  JournalQueryData data = {
-    .type = QUERY_GET_RELAXING,
-    .response = NULL
-  };
-
-  g_assert (journal);
-  g_assert (service_name);
-
-  sql = g_strdup_printf ("UPDATE %s SET RELAXING = %d WHERE NAME IS '%s'",
-                         rmg_table_services, relaxing_status, service_name);
-
-  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
-      != SQLITE_OK)
-    {
-      g_set_error (error,
-                   g_quark_from_static_string ("JournalSetRelaxingState"),
-                   1,
-                   "SQL query error");
-      g_warning ("Fail to set relaxing state. SQL error %s", query_error);
-      sqlite3_free (query_error);
-      status = RMG_STATUS_ERROR;
-    }
-
-  return status;
-}
-
 glong
 rmg_journal_get_relaxing_timeout (RmgJournal *journal,
                                   const gchar *service_name,
@@ -712,8 +656,11 @@ rmg_journal_get_relaxing_timeout (RmgJournal *journal,
   g_autofree gchar *sql = NULL;
   gchar *query_error = NULL;
   glong timeout = 0;
+
   JournalQueryData data = {
-    .type = QUERY_GET_RELAXING,
+    .type = QUERY_GET_TIMEOUT,
+    .journal = journal,
+    .callback = NULL,
     .response = NULL
   };
 
@@ -739,6 +686,38 @@ rmg_journal_get_relaxing_timeout (RmgJournal *journal,
   return timeout;
 }
 
+void
+rmg_journal_call_foreach_relaxing (RmgJournal *journal,
+                                   RmgJournalCallback callback,
+                                   GError **error)
+{
+  g_autofree gchar *sql = NULL;
+  gchar *query_error = NULL;
+
+  JournalQueryData data = {
+    .type = QUERY_CALL_RELAXING,
+    .journal = journal,
+    .callback = callback,
+    .response = NULL
+  };
+
+  g_assert (journal);
+
+  sql = g_strdup_printf ("SELECT NAME FROM %s WHERE RVECTOR > 0",
+                         rmg_table_services);
+
+  if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error)
+      != SQLITE_OK)
+    {
+      g_set_error (error,
+                   g_quark_from_static_string ("JournalCallRelaxing"),
+                   1,
+                   "SQL query error");
+      g_warning ("Fail to get relaxing timeout. SQL error %s", query_error);
+      sqlite3_free (query_error);
+    }
+}
+
 glong
 rmg_journal_get_rvector (RmgJournal *journal,
                          const gchar *service_name,
@@ -747,8 +726,11 @@ rmg_journal_get_rvector (RmgJournal *journal,
   g_autofree gchar *sql = NULL;
   gchar *query_error = NULL;
   glong rvector = 0;
+
   JournalQueryData data = {
     .type = QUERY_GET_RVECTOR,
+    .journal = journal,
+    .callback = NULL,
     .response = NULL
   };
 
@@ -783,8 +765,11 @@ rmg_journal_set_rvector (RmgJournal *journal,
   g_autofree gchar *sql = NULL;
   gchar *query_error = NULL;
   RmgStatus status = RMG_STATUS_OK;
+
   JournalQueryData data = {
     .type = QUERY_SET_RVECTOR,
+    .journal = journal,
+    .callback = NULL,
     .response = NULL
   };
 
@@ -818,8 +803,11 @@ rmg_journal_get_service_action (RmgJournal *journal,
   gchar *query_error = NULL;
   RmgActionType action_type = ACTION_INVALID;
   glong rvector = 0;
+
   JournalQueryData data = {
     .type = QUERY_GET_ACTION,
+    .journal = journal,
+    .callback = NULL,
     .response = NULL
   };
 
@@ -855,8 +843,11 @@ rmg_journal_remove_service (RmgJournal *journal,
   g_autofree gchar *service_sql = NULL;
   gchar *query_error = NULL;
   RmgStatus status = RMG_STATUS_OK;
+
   JournalQueryData data = {
     .type = QUERY_REMOVE_SERVICE,
+    .journal = journal,
+    .callback = NULL,
     .response = NULL
   };
 
@@ -908,8 +899,11 @@ rmg_journal_get_hash (RmgJournal *journal,
   g_autofree gchar *sql = NULL;
   gchar *query_error = NULL;
   gulong hash = 0;
+
   JournalQueryData data = {
     .type = QUERY_GET_HASH,
+    .journal = journal,
+    .callback = NULL,
     .response = NULL
   };
 

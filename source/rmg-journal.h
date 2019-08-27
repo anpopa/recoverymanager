@@ -37,6 +37,8 @@
 
 G_BEGIN_DECLS
 
+typedef void (*RmgJournalCallback) (gpointer _journal, gpointer _data);
+
 /**
  * @struct RmgJournal
  * @brief The RmgJournal opaque data structure
@@ -152,32 +154,6 @@ gchar *rmg_journal_get_public_data_path (RmgJournal *journal,
                                          const gchar *service_name,
                                          GError **error);
 /**
- * @brief Get relaxing state
- *
- * @param journal Pointer to the journal object
- * @param service_name The service name to lookup
- * @param error The GError object or NULL
- *
- * @return Boolean value of relaxing state
- */
-gboolean rmg_journal_get_relaxing_state (RmgJournal *journal,
-                                         const gchar *service_name,
-                                         GError **error);
-/**
- * @brief Set relaxing state
- *
- * @param journal Pointer to the journal object
- * @param service_name The service name to lookup
- * @param relaxing_status The new state
- * @param error The GError object or NULL
- *
- * @return On success return RMG_STATUS_OK
- */
-RmgStatus rmg_journal_set_relaxing_state (RmgJournal *journal,
-                                          const gchar *service_name,
-                                          gboolean relaxing_status,
-                                          GError **error);
-/**
  * @brief Get timeout value
  *
  * @param journal Pointer to the journal object
@@ -188,6 +164,16 @@ RmgStatus rmg_journal_set_relaxing_state (RmgJournal *journal,
  */
 glong rmg_journal_get_relaxing_timeout (RmgJournal *journal,
                                         const gchar *service_name,
+                                        GError **error);
+/**
+ * @brief Call funtion for each relaxing service
+ *
+ * @param journal Pointer to the journal object
+ * @param callback GSourceFunc callback
+ * @param error The GError object or NULL
+ */
+void rmg_journal_call_foreach_relaxing (RmgJournal *journal,
+                                        RmgJournalCallback callback,
                                         GError **error);
 /**
  * @brief Get rvector value
