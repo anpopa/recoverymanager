@@ -167,6 +167,7 @@ process_message (RmgClient *c,
       rmg_devent_set_service_name (event, context->service_name);
       rmg_devent_set_context_name (event, context->context_name);
 
+      g_info ("Dispatch slave context restart request from context %s", context->context_name);
       rmg_dispatcher_push_service_event (dispatcher, event);
     }
     break;
@@ -179,6 +180,7 @@ process_message (RmgClient *c,
       rmg_devent_set_service_name (event, context->service_name);
       rmg_devent_set_context_name (event, context->context_name);
 
+      g_info ("Dispatch slave platform restart request from context %s", context->context_name);
       rmg_dispatcher_push_service_event (dispatcher, event);
     }
     break;
@@ -191,6 +193,7 @@ process_message (RmgClient *c,
       rmg_devent_set_service_name (event, context->service_name);
       rmg_devent_set_context_name (event, context->context_name);
 
+      g_info ("Dispatch slave factory reset request from context %s", context->context_name);
       rmg_dispatcher_push_service_event (dispatcher, event);
     }
     break;

@@ -58,11 +58,11 @@ G_BEGIN_DECLS
 #endif
 
 #ifndef RMG_PUBLIC_DATA_RESET_CMD
-#define RMG_PUBLIC_DATA_RESET_CMD "rm -rf ${path}"
+#define RMG_PUBLIC_DATA_RESET_CMD "rm -rf ${path}/*"
 #endif
 
 #ifndef RMG_PRIVATE_DATA_RESET_CMD
-#define RMG_PRIVATE_DATA_RESET_CMD "rm -rf ${path}"
+#define RMG_PRIVATE_DATA_RESET_CMD "rm -rf ${path}/*"
 #endif
 
 #ifndef RMG_PLATFORM_RESTART_CMD

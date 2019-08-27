@@ -123,7 +123,7 @@ server_source_callback (gpointer rmgserver)
 
       RMG_UNUSED (client);
 
-      g_debug ("New client connected %d", clientfd);
+      g_info ("New recoverymanager client connected %d", clientfd);
     }
   else
     {

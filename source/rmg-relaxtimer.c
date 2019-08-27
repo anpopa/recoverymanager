@@ -59,7 +59,7 @@ relaxtimer_callback (gpointer user_data)
             }
           else
             {
-              g_info ("Service '%s' passed the relax time and is considered recover",
+              g_info ("Service '%s' passed the relaxation time and is considered recovered",
                       relaxtimer->service_name);
             }
         }

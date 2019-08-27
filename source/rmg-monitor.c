@@ -334,7 +334,7 @@ monitor_read_services (RmgMonitor *monitor)
   if (monitor->proxy == NULL)
     {
       g_warning ("Monitor proxy not available for service units read");
-      g_return_if_reached ();
+      return;
     }
 
   service_list = g_dbus_proxy_call_sync (monitor->proxy,

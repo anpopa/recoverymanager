@@ -336,7 +336,9 @@ parser_start_element (GMarkupParseContext *context,
         }
       else
         {
-          glong g = rmg_jentry_get_rvector (entry) + retry;
+          /* we add a +1 to the upper limit of action vector so when asking for
+           * next action we get the correct value in between */
+          glong g = rmg_jentry_get_rvector (entry) + retry + 1;
 
           rmg_jentry_add_action (entry, action_type, rmg_jentry_get_rvector (entry), g);
           rmg_jentry_set_rvector (entry, g);

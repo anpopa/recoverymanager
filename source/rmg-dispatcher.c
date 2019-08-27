@@ -237,14 +237,14 @@ do_process_service_crash_event (RmgDispatcher *dispatcher, RmgDEvent *event)
   if (error != NULL)
     {
       g_warning ("Fail to get service hash %s. Error %s", event->service_name, error->message);
-      g_return_if_reached ();
+      return;
     }
   else
     {
       if (service_hash == 0)
         {
           g_info ("No recovery unit defined for crashed service='%s'", event->service_name);
-          g_return_if_reached ();
+          return;
         }
     }
 
@@ -255,7 +255,7 @@ do_process_service_crash_event (RmgDispatcher *dispatcher, RmgDEvent *event)
       g_warning ("Fail to read the rvector for service %s. Error %s",
                  event->service_name,
                  error->message);
-      g_return_if_reached ();
+      return;
     }
 
   rmg_journal_set_rvector (dispatcher->journal, event->service_name, (rvector + 1), &error);
@@ -264,7 +264,7 @@ do_process_service_crash_event (RmgDispatcher *dispatcher, RmgDEvent *event)
       g_warning ("Fail to increment the rvector for service %s. Error %s",
                  event->service_name,
                  error->message);
-      g_return_if_reached ();
+      return;
     }
 
   rvector += 1;
@@ -276,7 +276,7 @@ do_process_service_crash_event (RmgDispatcher *dispatcher, RmgDEvent *event)
       g_warning ("Fail to read next service action %s. Error %s",
                  event->service_name,
                  error->message);
-      g_return_if_reached ();
+      return;
     }
 
   if (action_type != ACTION_INVALID)

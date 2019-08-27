@@ -284,7 +284,7 @@ do_process_service_reset_public_data_event (RmgExecutor *executor,
       g_warning ("Fail to read public data path for service %s. Error %s",
                  dispatcher_event->service_name,
                  error->message);
-      g_return_if_reached ();
+      return;
     }
 
   reset_cmd = rmg_options_string_for (executor->options, KEY_PUBLIC_DATA_RESET_CMD);
@@ -307,7 +307,7 @@ do_process_service_reset_public_data_event (RmgExecutor *executor,
   if (error != NULL)
     g_warning ("Fail to spawn process. Error %s", error->message);
   else
-    g_info ("Stdout: %s", standard_output);
+    g_info ("Public data reset exitcode=%d output='%s'", exit_status, standard_output);
 
   /* do service restart */
   do_process_service_restart_event (executor, dispatcher_event);
@@ -339,7 +339,7 @@ do_process_service_reset_private_data_event (RmgExecutor *executor,
       g_warning ("Fail to read private data path for service %s. Error %s",
                  dispatcher_event->service_name,
                  error->message);
-      g_return_if_reached ();
+      return;
     }
 
   reset_cmd = rmg_options_string_for (executor->options, KEY_PRIVATE_DATA_RESET_CMD);
@@ -362,7 +362,7 @@ do_process_service_reset_private_data_event (RmgExecutor *executor,
   if (error != NULL)
     g_warning ("Fail to spawn process. Error %s", error->message);
   else
-    g_info ("Stdout: %s", standard_output);
+    g_info ("Private data reset exitcode=%d output='%s'", exit_status, standard_output);
 
   /* do service restart */
   do_process_service_restart_event (executor, dispatcher_event);
@@ -381,9 +381,16 @@ do_process_context_restart_event (RmgExecutor *executor,
                                   RmgDEvent *dispatcher_event)
 {
   if (g_run_mode == RUN_MODE_MASTER)
-    do_process_context_restart_event_master (executor, dispatcher_event);
+    {
+      if (dispatcher_event->context_name == NULL)
+        do_process_platform_restart_event_master (executor, dispatcher_event);
+      else
+        do_process_context_restart_event_master (executor, dispatcher_event);
+    }
   else
-    do_process_context_restart_event_slave (executor, dispatcher_event);
+    {
+      do_process_context_restart_event_slave (executor, dispatcher_event);
+    }
 }
 
 static void
@@ -408,15 +415,12 @@ do_process_context_restart_event_master (RmgExecutor *executor,
   if (error != NULL)
     {
       g_warning ("Fail to get service hash %s. Error %s", service_name, error->message);
-      g_return_if_reached ();
+      return;
     }
   else
     {
       if (service_hash == 0)
-        {
-          g_warning ("No recovery unit defined for container service='%s'",
-                     dispatcher_event->service_name);
-        }
+        g_info ("No recovery unit defined for container service='%s'", service_name);
     }
 
   g_info ("Request container '%s' reboot", dispatcher_event->context_name);
@@ -427,7 +431,7 @@ do_process_context_restart_event_master (RmgExecutor *executor,
       if (!container->is_running (container))
         g_warning ("Container %s not running", dispatcher_event->context_name);
 
-      if (!container->shutdown (container, 30))
+      if (!container->shutdown (container, 10))
         g_warning ("Fail to reboot container %s", dispatcher_event->context_name);
     }
 #endif
@@ -452,7 +456,7 @@ do_process_context_restart_event_slave (RmgExecutor *executor,
       if (rmg_manager_connect (executor->manager) != RMG_STATUS_OK)
         {
           g_warning ("Fail to connect to master instance");
-          g_return_if_reached ();
+          return;
         }
     }
 
@@ -524,7 +528,7 @@ do_process_platform_restart_event_slave (RmgExecutor *executor,
       if (rmg_manager_connect (executor->manager) != RMG_STATUS_OK)
         {
           g_warning ("Fail to connect to master instance");
-          g_return_if_reached ();
+          return;
         }
     }
 
@@ -606,7 +610,7 @@ do_process_factory_reset_event_slave (RmgExecutor *executor,
       if (rmg_manager_connect (executor->manager) != RMG_STATUS_OK)
         {
           g_warning ("Fail to connect to master instance");
-          g_return_if_reached ();
+          return;
         }
     }
 

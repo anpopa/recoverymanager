@@ -96,7 +96,7 @@ on_properties_changed (GDBusProxy          *proxy,
       if ((active_state_str == NULL) || (active_substate_str == NULL))
         {
           g_warning ("Cannot read current active state or substate");
-          g_return_if_reached ();
+          return;
         }
 
       active_state = rmg_mentry_active_state_from (active_state_str);
@@ -110,8 +110,8 @@ on_properties_changed (GDBusProxy          *proxy,
                   active_state_str,
                   active_substate_str);
 
-          if ((mentry->active_state != SERVICE_STATE_INACTIVE)
-              && (active_state == SERVICE_STATE_INACTIVE))
+          if ((mentry->active_state != SERVICE_STATE_FAILED)
+              && (active_state == SERVICE_STATE_FAILED))
             {
               dispatcher_event = DISPATCHER_EVENT_SERVICE_CRASHED;
             }
