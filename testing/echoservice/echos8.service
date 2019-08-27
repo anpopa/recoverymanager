@@ -1,0 +1,9 @@
+[Unit]
+Description=Echo service S8
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/echoservice S8
+
+[Install]
+WantedBy=multi-user.target

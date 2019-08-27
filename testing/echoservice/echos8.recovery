@@ -1,0 +1,13 @@
+<service>echos7.service</service>
+<description>Echo service S7 recovery unit</description>
+<relaxtime>60</relaxtime>
+<privatedata>/var/lib/echos7/private</privatedata>
+<publicdata>/var/lib/echos7/public</publicdata>
+<actions>
+    <action type="resetService" retry="3">Reset Service</action>
+    <action type="resetPublicData">Reset Public Data</action>
+    <action type="resetPrivateData">Reset Private Data</action>
+    <action type="contextRestart">Restart Container</action>
+    <action type="platformRestart">Restart Hardware</action>
+    <action type="factoryReset">Do critical factory reset</action>
+</actions>

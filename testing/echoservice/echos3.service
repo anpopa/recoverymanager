@@ -1,0 +1,9 @@
+[Unit]
+Description=Echo service S3
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/echoservice S3
+
+[Install]
+WantedBy=multi-user.target
