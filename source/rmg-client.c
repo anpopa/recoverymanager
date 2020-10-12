@@ -1,34 +1,30 @@
-/* rmg-client.c
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-client.c
  */
 
 #include "rmg-client.h"
+#include "rmg-server.h"
 #include "rmg-dispatcher.h"
+#include "rmg-defaults.h"
 #include "rmg-utils.h"
 
 #include <sys/types.h>
@@ -67,8 +63,7 @@ static void process_message (RmgClient *c, RmgMessage *msg);
 /**
  * @brief GSourceFuncs vtable
  */
-static GSourceFuncs client_source_funcs =
-{
+static GSourceFuncs client_source_funcs = {
   client_source_prepare,
   NULL,
   client_source_dispatch,
@@ -78,8 +73,7 @@ static GSourceFuncs client_source_funcs =
 };
 
 static gboolean
-client_source_prepare (GSource *source,
-                       gint *timeout)
+client_source_prepare (GSource *source, gint *timeout)
 {
   RMG_UNUSED (source);
   *timeout = -1;
@@ -94,9 +88,7 @@ client_source_check (GSource *source)
 }
 
 static gboolean
-client_source_dispatch (GSource *source,
-                        GSourceFunc callback,
-                        gpointer user_data)
+client_source_dispatch (GSource *source, GSourceFunc callback, gpointer user_data)
 {
   RMG_UNUSED (source);
 
@@ -110,24 +102,21 @@ static gboolean
 client_source_callback (gpointer data)
 {
   RmgClient *client = (RmgClient *)data;
+
+  g_autoptr (RmgMessage) msg = NULL;
   gboolean status = TRUE;
-  RmgMessage msg;
 
   g_assert (client);
 
-  rmg_message_init (&msg, RMG_MESSAGE_UNKNOWN, 0);
+  msg = rmg_message_new (RMG_MESSAGE_UNKNOWN, 0);
 
-  if (rmg_message_read (client->sockfd, &msg) != RMG_STATUS_OK)
+  if (rmg_message_read (client->sockfd, msg) != RMG_STATUS_OK)
     {
       g_debug ("Cannot read from client socket %d", client->sockfd);
       status = FALSE;
     }
   else
-    {
-      process_message (client, &msg);
-    }
-
-  rmg_message_free_data (&msg);
+    process_message (client, msg);
 
   return status;
 }
@@ -138,65 +127,71 @@ client_source_destroy_notify (gpointer data)
   RmgClient *client = (RmgClient *)data;
 
   g_assert (client);
-  g_debug ("Client %d disconnected", client->sockfd);
 
+  g_debug ("Client %d disconnected", client->sockfd);
+  rmg_server_rem_client ((RmgServer *)client->server, client);
   rmg_client_unref (client);
 }
 
 static void
-process_message (RmgClient *c,
-                 RmgMessage *msg)
+process_message (RmgClient *c, RmgMessage *msg)
 {
-  g_autofree gchar *tmp_id = NULL;
-  g_autofree gchar *tmp_name = NULL;
   RmgDispatcher *dispatcher = (RmgDispatcher *)c->dispatcher;
 
   g_assert (c);
   g_assert (msg);
 
-  if (strncmp ((char *)msg->hdr.version, RMG_BUILDTIME_VERSION, RMG_VERSION_STRING_LEN) != 0)
-    g_warning ("Recoverymanager instances version not matching");
+  if (!rmg_message_is_valid (msg))
+    g_warning ("Message malformat or with different protocol version");
 
   switch (rmg_message_get_type (msg))
     {
-    case RMG_REQUEST_CONTEXT_RESTART:
-    {
-      RmgMessageRequestContextRestart *context = (RmgMessageRequestContextRestart *)msg->data;
-      RmgDEvent *event = rmg_devent_new (DISPATCHER_EVENT_REMOTE_CONTEXT_RESTART);
+    case RMG_MESSAGE_REPLICA_DESCRIPTOR: {
+      c->context_name = g_strdup (rmg_message_get_context_name (msg));
+      g_info ("Replica instance id=%d identify with name=%s", c->sockfd, c->context_name);
+    } break;
 
-      rmg_devent_set_service_name (event, context->service_name);
-      rmg_devent_set_context_name (event, context->context_name);
+    case RMG_MESSAGE_REQUEST_CONTEXT_RESTART: {
+      RmgDEvent *event = rmg_devent_new (DEVENT_REMOTE_CONTEXT_RESTART);
 
-      g_info ("Dispatch slave context restart request from context %s", context->context_name);
+      rmg_devent_set_service_name (event, rmg_message_get_service_name (msg));
+      rmg_devent_set_context_name (event, rmg_message_get_context_name (msg));
+
+      g_info ("Dispatch replica instance context restart request from %s", event->context_name);
       rmg_dispatcher_push_service_event (dispatcher, event);
-    }
-    break;
+    } break;
 
-    case RMG_REQUEST_PLATFORM_RESTART:
-    {
-      RmgMessageRequestPlatformRestart *context = (RmgMessageRequestPlatformRestart *)msg->data;
-      RmgDEvent *event = rmg_devent_new (DISPATCHER_EVENT_REMOTE_CONTEXT_RESTART);
+    case RMG_MESSAGE_REQUEST_PLATFORM_RESTART: {
+      RmgDEvent *event = rmg_devent_new (DEVENT_REMOTE_CONTEXT_RESTART);
 
-      rmg_devent_set_service_name (event, context->service_name);
-      rmg_devent_set_context_name (event, context->context_name);
+      rmg_devent_set_service_name (event, rmg_message_get_service_name (msg));
+      rmg_devent_set_context_name (event, rmg_message_get_context_name (msg));
 
-      g_info ("Dispatch slave platform restart request from context %s", context->context_name);
+      g_info ("Dispatch replica instance platform restart request from %s", event->context_name);
       rmg_dispatcher_push_service_event (dispatcher, event);
-    }
-    break;
+    } break;
 
-    case RMG_REQUEST_FACTORY_RESET:
-    {
-      RmgMessageRequestFactoryReset *context = (RmgMessageRequestFactoryReset *)msg->data;
-      RmgDEvent *event = rmg_devent_new (DISPATCHER_EVENT_REMOTE_FACTORY_RESET);
+    case RMG_MESSAGE_REQUEST_FACTORY_RESET: {
+      RmgDEvent *event = rmg_devent_new (DEVENT_REMOTE_FACTORY_RESET);
 
-      rmg_devent_set_service_name (event, context->service_name);
-      rmg_devent_set_context_name (event, context->context_name);
+      rmg_devent_set_service_name (event, rmg_message_get_service_name (msg));
+      rmg_devent_set_context_name (event, rmg_message_get_context_name (msg));
 
-      g_info ("Dispatch slave factory reset request from context %s", context->context_name);
+      g_info ("Dispatch replica instance factory reset request from %s", event->context_name);
       rmg_dispatcher_push_service_event (dispatcher, event);
-    }
-    break;
+    } break;
+
+    case RMG_MESSAGE_INFORM_PRIMARY_SERVICE_FAILED: {
+      RmgDEvent *event = rmg_devent_new (DEVENT_INFORM_SERVICE_FAILED);
+
+      rmg_devent_set_service_name (event, rmg_message_get_service_name (msg));
+      rmg_devent_set_context_name (event, rmg_message_get_context_name (msg));
+
+      g_info ("Dispatch replica instance service failed '%s' for '%s'",
+              event->service_name,
+              event->context_name);
+      rmg_dispatcher_push_service_event (dispatcher, event);
+    } break;
 
     default:
       break;
@@ -204,8 +199,7 @@ process_message (RmgClient *c,
 }
 
 RmgClient *
-rmg_client_new (gint clientfd,
-                gpointer dispatcher)
+rmg_client_new (gint clientfd, gpointer dispatcher)
 {
   RmgClient *client = (RmgClient *)g_source_new (&client_source_funcs, sizeof(RmgClient));
 
@@ -238,6 +232,49 @@ rmg_client_ref (RmgClient *client)
 }
 
 void
+rmg_client_set_server_ref (RmgClient *client, gpointer server)
+{
+  g_assert (client);
+  g_assert (server);
+
+  client->server = rmg_server_ref (server);
+}
+
+RmgStatus
+rmg_client_send (RmgClient *client, RmgMessage *msg)
+{
+  fd_set wfd;
+  struct timeval tv;
+  RmgStatus status = RMG_STATUS_OK;
+
+  g_assert (client);
+  g_assert (msg);
+
+  if (client->sockfd < 0)
+    {
+      g_warning ("No connection to client");
+      return RMG_STATUS_ERROR;
+    }
+
+  FD_ZERO (&wfd);
+
+  tv.tv_sec = CLIENT_SELECT_TIMEOUT;
+  tv.tv_usec = 0;
+  FD_SET (client->sockfd, &wfd);
+
+  status = select (client->sockfd + 1, NULL, &wfd, NULL, &tv);
+  if (status == -1)
+    g_warning ("Client socket select failed");
+  else
+    {
+      if (status > 0)
+        status = rmg_message_write (client->sockfd, msg);
+    }
+
+  return status;
+}
+
+void
 rmg_client_unref (RmgClient *client)
 {
   g_assert (client);
@@ -246,6 +283,12 @@ rmg_client_unref (RmgClient *client)
     {
       if (client->dispatcher != NULL)
         rmg_dispatcher_unref ((RmgDispatcher *)client->dispatcher);
+
+      if (client->server != NULL)
+        rmg_server_unref ((RmgServer *)client->server);
+
+      if (client->context_name != NULL)
+        g_free (client->context_name);
 
       g_source_unref (RMG_EVENT_SOURCE (client));
     }

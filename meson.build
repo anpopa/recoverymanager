@@ -44,12 +44,6 @@ configure_file(input : 'source/rmg-defaults.h.in',
   output : 'rmg-defaults.h',
   configuration : rmg_defaults_data)
 
-rmg_msgtype_data = configuration_data()
-rmg_msgtype_data.set('version', meson.project_version())
-configure_file(input : 'source/rmg-message-type.h.in',
-  output : 'rmg-message-type.h',
-  configuration : rmg_msgtype_data)
-
 rmg_config_data = configuration_data()
 rmg_config_data.set('config_dir', get_option('CONFDIR'))
 rmg_config_data.set('version', meson.project_version())
@@ -65,6 +59,12 @@ dep_lxc = declare_dependency()
 if get_option('LXC')
   add_project_arguments('-DWITH_LXC', language : 'c')
   dep_lxc = dependency('lxc', version : '>=3.0')
+endif
+
+dep_epilog = declare_dependency()
+if get_option('CDH_EPILOG')
+  add_project_arguments('-DWITH_EPILOG', language : 'c')
+  dep_epilog = dependency('libcdhepilog', version : '>=1.0')
 endif
 
 dep_systemd = dependency('libsystemd')
@@ -85,12 +85,11 @@ if get_option('TESTS')
   add_project_arguments('-DWITH_TESTS', language : 'c')
 endif
 
-
 dep_glib = dependency('glib-2.0', version : '>=2.58')
 dep_gio = dependency('gio-2.0', version : '>=2.58')
 dep_sqlite = dependency('sqlite3')
 
-recoverymanagerhost_sources = [
+recoverymanager_sources = [
   'source/rmg-message.c',
   'source/rmg-logging.c',
   'source/rmg-options.c',
@@ -102,27 +101,31 @@ recoverymanagerhost_sources = [
   'source/rmg-server.c',
   'source/rmg-dispatcher.c',
   'source/rmg-relaxtimer.c',
+  'source/rmg-friendtimer.c',
+  'source/rmg-crashmonitor.c',
   'source/rmg-manager.c',
   'source/rmg-monitor.c',
+  'source/rmg-checker.c',
   'source/rmg-executor.c',
   'source/rmg-jentry.c',
   'source/rmg-mentry.c',
   'source/rmg-devent.c',
   'source/rmg-application.c',
   ]
-
-recoverymanagerhost_deps = [
+  
+recoverymanager_deps = [
   dep_glib,
   dep_gio,
   dep_lxc,
+  dep_epilog,
   dep_systemd,
   dep_sqlite,
   dep_genivi_dlt,
   ]
 
 executable('recoverymanager', 
-  recoverymanagerhost_sources,
-  dependencies: recoverymanagerhost_deps,
+  recoverymanager_sources,
+  dependencies: recoverymanager_deps,
   c_args: rmg_c_compiler_args,
   install: true,
   )

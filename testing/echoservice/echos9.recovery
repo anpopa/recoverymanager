@@ -1,6 +1,4 @@
-<service>echos9.service</service>
-<description>Echo service S9 recovery unit</description>
-<relaxtime>60</relaxtime>
+<service relaxtime="60" checkstart="true">echos9.service</service>
 <privatedata>/var/lib/echos9/private</privatedata>
 <publicdata>/var/lib/echos9/public</publicdata>
 <actions>

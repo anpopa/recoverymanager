@@ -1,6 +1,4 @@
-<service>echos4.service</service>
-<description>Echo service S4 recovery unit</description>
-<relaxtime>60</relaxtime>
+<service relaxtime="60" checkstart="false">echos4.service</service>
 <privatedata>/var/lib/echos4/private</privatedata>
 <publicdata>/var/lib/echos4/public</publicdata>
 <actions>

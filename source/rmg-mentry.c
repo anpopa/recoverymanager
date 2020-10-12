@@ -1,54 +1,44 @@
-/* rmg-mentry.c
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-mentry.c
  */
 
 #include "rmg-mentry.h"
 #include "rmg-dispatcher.h"
 
-const gchar *active_state_names[] = {
-  "unknown",
-  "active",
-  "reloading",
-  "inactive",
-  "failed",
-  "activating",
-  "deactivating",
-  NULL
-};
+const gchar *active_state_names[] = { "unknown",
+                                      "active",
+                                      "reloading",
+                                      "inactive",
+                                      "failed",
+                                      "activating",
+                                      "deactivating",
+                                      NULL };
 
-const gchar *active_substate_names[] = {
-  "unknown",
-  "running",
-  "dead",
-  "inactive",
-  "stop-sigterm",
-  NULL
-};
+const gchar *active_substate_names[] = { "unknown",
+                                         "running",
+                                         "dead",
+                                         "inactive",
+                                         "stop-sigterm",
+                                         NULL };
 
 extern const gchar *sd_dbus_name;
 extern const gchar *sd_dbus_object_path;
@@ -56,9 +46,9 @@ extern const gchar *sd_dbus_interface_unit;
 extern const gchar *sd_dbus_interface_manager;
 
 static void
-on_properties_changed (GDBusProxy          *proxy,
-                       GVariant            *changed_properties,
-                       const gchar* const  *invalidated_properties,
+on_properties_changed (GDBusProxy *proxy,
+                       GVariant *changed_properties,
+                       const gchar *const *invalidated_properties,
                        gpointer user_data)
 {
   RmgMEntry *mentry = (RmgMEntry *)user_data;
@@ -74,16 +64,14 @@ on_properties_changed (GDBusProxy          *proxy,
     {
       const gchar *active_state_str = NULL;
       const gchar *active_substate_str = NULL;
-      DispatcherEventType dispatcher_event = DISPATCHER_EVENT_UNKNOWN;
+      DispatcherEventType dispatcher_event = DEVENT_UNKNOWN;
       ServiceActiveState active_state = SERVICE_STATE_UNKNOWN;
       ServiceActiveSubstate active_substate = SERVICE_SUBSTATE_UNKNOWN;
       GVariantIter *iter;
       const gchar *key;
       GVariant *value;
 
-      g_variant_get (changed_properties,
-                     "a{sv}",
-                     &iter);
+      g_variant_get (changed_properties, "a{sv}", &iter);
 
       while (g_variant_iter_loop (iter, "{&sv}", &key, &value))
         {
@@ -102,8 +90,7 @@ on_properties_changed (GDBusProxy          *proxy,
       active_state = rmg_mentry_active_state_from (active_state_str);
       active_substate = rmg_mentry_active_substate_from (active_substate_str);
 
-      if ((mentry->active_state != active_state)
-          || mentry->active_substate != active_substate)
+      if ((mentry->active_state != active_state) || mentry->active_substate != active_substate)
         {
           g_info ("Service '%s' state change to ActiveState='%s' SubState='%s'",
                   mentry->service_name,
@@ -113,21 +100,21 @@ on_properties_changed (GDBusProxy          *proxy,
           if ((mentry->active_state != SERVICE_STATE_FAILED)
               && (active_state == SERVICE_STATE_FAILED))
             {
-              dispatcher_event = DISPATCHER_EVENT_SERVICE_CRASHED;
+              dispatcher_event = DEVENT_SERVICE_CRASHED;
             }
           else
             {
               if ((mentry->active_state != SERVICE_STATE_ACTIVE)
                   && (active_state == SERVICE_STATE_ACTIVE))
                 {
-                  dispatcher_event = DISPATCHER_EVENT_SERVICE_RESTARTED;
+                  dispatcher_event = DEVENT_SERVICE_RESTARTED;
                 }
             }
 
           mentry->active_state = active_state;
           mentry->active_substate = active_substate;
 
-          if (dispatcher_event != DISPATCHER_EVENT_UNKNOWN)
+          if (dispatcher_event != DEVENT_UNKNOWN)
             {
               RmgDEvent *event = rmg_devent_new (dispatcher_event);
 
@@ -187,8 +174,7 @@ rmg_mentry_get_active_substate (ServiceActiveSubstate state)
   return active_substate_names[state];
 }
 
-RmgMEntry
-*
+RmgMEntry *
 rmg_mentry_new (const gchar *service_name,
                 const gchar *object_path,
                 ServiceActiveState active_state,
@@ -241,43 +227,60 @@ rmg_mentry_unref (RmgMEntry *mentry)
 }
 
 void
-rmg_mentry_set_manager_proxy (RmgMEntry *mentry,
-                              GDBusProxy *manager_proxy)
+rmg_mentry_set_manager_proxy (RmgMEntry *mentry, GDBusProxy *manager_proxy)
 {
   g_assert (mentry);
   mentry->manager_proxy = g_object_ref (manager_proxy);
 }
 
-RmgStatus
-rmg_mentry_build_proxy (RmgMEntry *mentry, gpointer _dispatcher)
+void
+proxy_ready_async_cb (GObject *source_object, GAsyncResult *res, gpointer user_data)
 {
   g_autoptr (GError) error = NULL;
+  RmgMEntry *mentry = (RmgMEntry *)user_data;
+  RmgStatus status = RMG_STATUS_OK;
 
+  RMG_UNUSED (source_object);
+
+  mentry->proxy = g_dbus_proxy_new_finish (res, &error);
+
+  if (error != NULL)
+    {
+      g_warning ("Fail to build proxy for new service '%s'. Error '%s'",
+                 mentry->service_name,
+                 error->message);
+      status = RMG_STATUS_ERROR;
+    }
+  else
+    {
+      g_signal_connect (mentry->proxy,
+                        "g-properties-changed",
+                        G_CALLBACK (on_properties_changed),
+                        mentry);
+    }
+
+  mentry->monitor_callback (mentry, mentry->monitor_object, status);
+}
+
+void
+rmg_mentry_build_proxy_async (RmgMEntry *mentry,
+                              gpointer _dispatcher,
+                              RmgMEntryAsyncStatus monitor_callback,
+                              gpointer _monitor)
+{
   g_assert (mentry);
   g_assert (_dispatcher);
 
   mentry->dispatcher = rmg_dispatcher_ref ((RmgDispatcher *)_dispatcher);
-  mentry->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
-                                                 G_DBUS_PROXY_FLAGS_NONE,
-                                                 NULL, /* GDBusInterfaceInfo */
-                                                 sd_dbus_name,
-                                                 mentry->object_path,
-                                                 sd_dbus_interface_unit,
-                                                 NULL, /* GCancellable */
-                                                 &error);
-  if (error != NULL)
-    {
-      g_warning ("Fail to build proxy for mentry='%s'. Error %s",
-                 mentry->service_name,
-                 error->message);
+  mentry->monitor_callback = monitor_callback;
+  mentry->monitor_object = _monitor;
 
-      return RMG_STATUS_ERROR;
-    }
-
-  g_signal_connect (mentry->proxy,
-                    "g-properties-changed",
-                    G_CALLBACK (on_properties_changed),
-                    mentry);
-
-  return RMG_STATUS_OK;
+  g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
+                            G_DBUS_PROXY_FLAGS_NONE,
+                            NULL, /* GDBusInterfaceInfo */
+                            sd_dbus_name,
+                            mentry->object_path,
+                            sd_dbus_interface_unit,
+                            NULL, /* GCancellable */
+                            proxy_ready_async_cb, mentry);
 }

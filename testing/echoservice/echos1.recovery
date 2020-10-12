@@ -1,6 +1,4 @@
-<service>echos1.service</service>
-<description>Echo service S1 recovery unit</description>
-<relaxtime>60</relaxtime>
+<service relaxtime="60" checkstart="false">echos1.service</service>
 <privatedata>/var/lib/echos1/private</privatedata>
 <publicdata>/var/lib/echos1/public</publicdata>
 <actions>

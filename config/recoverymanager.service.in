@@ -1,13 +1,15 @@
 ###############################################################################
 #
-#  Recovery manager
+#  RecoveryManager service
 #
 ###############################################################################
 [Unit]
 Description=Recovery Manager service
+Wants=dbus.service
+After=dbus.service
 
 [Service]
-Type=simple
+Type=notify
 User=root
 Group=root
 ExecStart=@install_prefix@/bin/recoverymanager

@@ -1,45 +1,39 @@
-/* rmg-utils.h
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-utils.c
  */
 
 #include "rmg-utils.h"
 
-#include <glib/gstdio.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <glib/gstdio.h>
+#include <grp.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <grp.h>
-#include <pwd.h>
 
 #define TMP_BUFFER_SIZE (1024)
 #define UNKNOWN_OS_VERSION "Unknown version"
@@ -47,6 +41,7 @@
 /* Preserve the size and order from RmgActionType */
 const gchar *g_action_name[] = {
   "invalid",
+  "ignoreService",
   "resetService",
   "resetPublicData",
   "resetPrivateData",
@@ -55,6 +50,24 @@ const gchar *g_action_name[] = {
   "platformRestart",
   "factoryReset",
   "guruMeditation"
+};
+
+/* Preserve the size and order from RmgFriendType */
+const gchar *g_friend_name[] = {
+  "unknown",
+  "process",
+  "service",
+  "invalid"
+};
+
+/* Preserve the size and order from RmgFriendActionType */
+const gchar *g_friend_action_name[] = {
+  "unknown",
+  "start",
+  "stop",
+  "restart",
+  "signal",
+  "invalid"
 };
 
 static gchar *os_version = NULL;
@@ -75,6 +88,42 @@ const gchar *
 rmg_utils_action_name (RmgActionType type)
 {
   return g_action_name[type];
+}
+
+RmgFriendType
+rmg_utils_friend_type_from (const gchar *name)
+{
+  for (gint i = 0; i < FRIEND_INVALID; i++)
+    {
+      if (g_strcmp0 (g_friend_name[i], name) == 0)
+        return (RmgFriendType)i;
+    }
+
+  return FRIEND_UNKNOWN;
+}
+
+const gchar *
+rmg_utils_friend_name (RmgFriendType type)
+{
+  return g_friend_name[type];
+}
+
+RmgFriendActionType
+rmg_utils_friend_action_type_from (const gchar *name)
+{
+  for (gint i = 0; i < FRIEND_ACTION_INVALID; i++)
+    {
+      if (g_strcmp0 (g_friend_action_name[i], name) == 0)
+        return (RmgFriendActionType)i;
+    }
+
+  return FRIEND_ACTION_UNKNOWN;
+}
+
+const gchar *
+rmg_utils_friend_action_name (RmgFriendActionType type)
+{
+  return g_friend_action_name[type];
 }
 
 gchar *
@@ -148,42 +197,36 @@ const gchar *
 rmg_utils_get_osversion (void)
 {
   gchar *retval = NULL;
+  FILE *fstm;
 
   if (os_version != NULL)
-    {
-      return os_version;
-    }
+    return os_version;
+
+  if ((fstm = fopen ("/etc/os-release", "r")) == NULL)
+    g_warning ("Fail to open /etc/os-release file. Error %s", strerror (errno));
   else
     {
       gchar tmpbuf[TMP_BUFFER_SIZE];
       gboolean done = FALSE;
-      FILE *fstm;
 
-      if ((fstm = fopen ("/etc/os-release", "r")) == NULL)
+      while (fgets (tmpbuf, sizeof(tmpbuf), fstm) && !done)
         {
-          g_warning ("Fail to open /etc/os-release file. Error %s", strerror (errno));
-        }
-      else
-        {
-          while (fgets (tmpbuf, sizeof(tmpbuf), fstm) && !done)
+          gchar *version = g_strrstr (tmpbuf, "VERSION=");
+
+          if (version != NULL)
             {
-              gchar *version = g_strrstr (tmpbuf, "VERSION=");
-
-              if (version != NULL)
+              retval = g_strdup (version + strlen ("VERSION=") + 1);
+              if (retval != NULL)
                 {
-                  retval = g_strdup (version + strlen ("VERSION=") + 1);
-                  if (retval != NULL)
-                    {
-                      g_strstrip (retval);
-                      g_strdelimit (retval, "\"", '\0');
-                    }
-
-                  done = TRUE;
+                  g_strstrip (retval);
+                  g_strdelimit (retval, "\"", '\0');
                 }
-            }
 
-          fclose (fstm);
+              done = TRUE;
+            }
         }
+
+      fclose (fstm);
     }
 
   if (retval == NULL)
@@ -210,9 +253,7 @@ rmg_utils_get_filesize (const gchar *file_path)
 }
 
 RmgStatus
-rmg_utils_chown (const gchar *file_path,
-                 const gchar *user_name,
-                 const gchar *group_name)
+rmg_utils_chown (const gchar *file_path, const gchar *user_name, const gchar *group_name)
 {
   RmgStatus status = RMG_STATUS_OK;
   struct passwd *pwd;
@@ -224,16 +265,12 @@ rmg_utils_chown (const gchar *file_path,
 
   pwd = getpwnam (user_name);
   if (pwd == NULL)
-    {
-      status = RMG_STATUS_ERROR;
-    }
+    status = RMG_STATUS_ERROR;
   else
     {
       grp = getgrnam (group_name);
       if (grp == NULL)
-        {
-          status = RMG_STATUS_ERROR;
-        }
+        status = RMG_STATUS_ERROR;
       else
         {
           if (chown (file_path, pwd->pw_uid, grp->gr_gid) == -1)

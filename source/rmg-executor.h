@@ -1,42 +1,37 @@
-/* rmg-executor.h
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-executor.h
  */
 
 #pragma once
 
 #include "rmg-devent.h"
-#include "rmg-options.h"
 #include "rmg-journal.h"
 #include "rmg-manager.h"
+#include "rmg-server.h"
+#include "rmg-options.h"
 #include "rmg-types.h"
 
-#include <glib.h>
 #include <gio/gio.h>
+#include <glib.h>
 
 G_BEGIN_DECLS
 
@@ -45,6 +40,8 @@ G_BEGIN_DECLS
  * @brief Executor event data type
  */
 typedef enum _ExecutorEventType {
+  EXECUTOR_EVENT_FRIEND_PROCESS_CRASH,
+  EXECUTOR_EVENT_FRIEND_SERVICE_FAILED,
   EXECUTOR_EVENT_SERVICE_RESTART,
   EXECUTOR_EVENT_SERVICE_RESET_PUBLIC_DATA,
   EXECUTOR_EVENT_SERVICE_RESET_PRIVATE_DATA,
@@ -58,15 +55,16 @@ typedef enum _ExecutorEventType {
  * @function RmgExecutorCallback
  * @brief Custom callback used internally by RmgExecutor as source callback
  */
-typedef gboolean (*RmgExecutorCallback) (gpointer _executor, gpointer _event);
+typedef gboolean        (*RmgExecutorCallback)              (gpointer _executor, 
+                                                             gpointer _event);
 
 /**
  * @struct RmgExecutorEvent
  * @brief The file transfer event
  */
 typedef struct _RmgExecutorEvent {
-  ExecutorEventType type;      /**< The event type the element holds */
-  RmgDEvent *dispatcher_event; /**< Event object from dispatcher */
+  ExecutorEventType type;           /**< The event type the element holds */
+  RmgDEvent *dispatcher_event;      /**< Event object from dispatcher */
 } RmgExecutorEvent;
 
 /**
@@ -74,37 +72,64 @@ typedef struct _RmgExecutorEvent {
  * @brief The RmgExecutor opaque data structure
  */
 typedef struct _RmgExecutor {
-  GSource source;  /**< Event loop source */
+  GSource source;                   /**< Event loop source */
   RmgOptions *options;
   RmgJournal *journal;
   RmgManager *manager;
-  GAsyncQueue    *queue;  /**< Async queue */
-  RmgExecutorCallback callback; /**< Callback function */
-  grefcount rc;     /**< Reference counter variable  */
+  RmgServer  *server;
+  GDBusProxy *sd_manager_proxy;
+  GAsyncQueue *queue;               /**< Async queue */
+  RmgExecutorCallback callback;     /**< Callback function */
+  grefcount rc;
 } RmgExecutor;
 
 /*
  * @brief Create a new executor object
  * @return On success return a new RmgExecutor object otherwise return NULL
  */
-RmgExecutor *rmg_executor_new (RmgOptions *options, RmgJournal *journal);
+RmgExecutor *           rmg_executor_new                    (RmgOptions *options, 
+                                                             RmgJournal *journal);
 
 /**
  * @brief Aquire executor object
- * @param c Pointer to the executor object
+ * @param executor Pointer to the executor object
  */
-RmgExecutor *rmg_executor_ref (RmgExecutor *executor);
+RmgExecutor *           rmg_executor_ref                    (RmgExecutor *executor);
 
 /**
  * @brief Release executor object
- * @param c Pointer to the executor object
+ * @param executor Pointer to the executor object
  */
-void rmg_executor_unref (RmgExecutor *executor);
+void                    rmg_executor_unref                  (RmgExecutor *executor);
+
+/**
+ * @brief Set replica manager
+ * @param executor Pointer to the executor object
+ * @param manager Pointer to the manager object
+ */
+void                    rmg_executor_set_replica_manager    (RmgExecutor *executor, 
+                                                             RmgManager *manager);
+
+/**
+ * @brief Set primary server
+ * @param executor Pointer to the executor object
+ * @param server Pointer to the server object
+ */
+void                    rmg_executor_set_primary_server     (RmgExecutor *executor, 
+                                                             RmgServer *server);
 
 /**
  * @brief Push an executor event
  */
-void rmg_executor_push_event (RmgExecutor *executor, ExecutorEventType type, RmgDEvent *dispatcher_event);
+void                    rmg_executor_push_event             (RmgExecutor *executor, 
+                                                             ExecutorEventType type,
+                                                             RmgDEvent *dispatcher_event);
+/**
+ * @brief Build DBus proxy
+ * @param executor Pointer to the executor object
+ */
+void                    rmg_executor_set_proxy              (RmgExecutor *executor, 
+                                                             GDBusProxy *dbus_proxy);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgExecutor, rmg_executor_unref);
 

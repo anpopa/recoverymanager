@@ -1,30 +1,24 @@
-/* rmg-message.c
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-message.c
  */
 
 #include "rmg-message.h"
@@ -34,106 +28,391 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/uio.h>
 
-void
-rmg_message_init (RmgMessage *m,
-                  RmgMessageType type,
-                  uint16_t session)
+#define RMG_MESSAGE_IOVEC_MAX_ARRAY (16)
+const char *rmg_notavailable_str = "NotAvailable";
+
+RmgMessage *
+rmg_message_new (RmgMessageType type, uint16_t session)
 {
-  g_assert (m);
+  RmgMessage *msg = g_new0 (RmgMessage, 1);
 
-  memset (m, 0, sizeof(RmgMessage));
-  m->hdr.type = type;
-  m->hdr.hsh = RMG_MESSAGE_START_HASH;
-  m->hdr.session = session;
+  g_assert (msg);
+
+  g_ref_count_init (&msg->rc);
+  msg->hdr.type = type;
+  msg->hdr.hsh = RMG_MESSAGE_START_HASH;
+  msg->hdr.session = session;
+  msg->hdr.version = RMG_MESSAGE_PROTOCOL_VERSION;
+
+  return msg;
+}
+
+RmgMessage *
+rmg_message_ref (RmgMessage *msg)
+{
+  g_assert (msg);
+  g_ref_count_inc (&msg->rc);
+  return msg;
 }
 
 void
-rmg_message_set_data (RmgMessage *m,
-                      void *data,
-                      uint32_t size)
+rmg_message_unref (RmgMessage *msg)
 {
-  g_assert (m);
-  g_assert (data);
+  g_assert (msg);
 
-  m->hdr.data_size = size;
-  m->data = data;
+  if (g_ref_count_dec (&msg->rc) == TRUE)
+    {
+      g_free (msg->data.service_name);
+      g_free (msg->data.context_name);
+      g_free (msg);
+    }
 }
 
-void
-rmg_message_free_data (RmgMessage *m)
+gboolean
+rmg_message_is_valid (RmgMessage *msg)
 {
-  g_assert (m);
+  g_assert (msg);
 
-  if (m->data != NULL)
-    free (m->data);
-}
+  if (msg->hdr.hsh != RMG_MESSAGE_START_HASH || msg->hdr.version != RMG_MESSAGE_PROTOCOL_VERSION)
+    return FALSE;
 
-bool
-rmg_message_is_valid (RmgMessage *m)
-{
-  if (m == NULL)
-    return false;
-
-  if (m->hdr.hsh != RMG_MESSAGE_START_HASH)
-    return false;
-
-  return true;
+  return TRUE;
 }
 
 RmgMessageType
-rmg_message_get_type (RmgMessage *m)
+rmg_message_get_type (RmgMessage *msg)
 {
-  g_assert (m);
-  return m->hdr.type;
+  g_assert (msg);
+  return msg->hdr.type;
+}
+
+void
+rmg_message_set_action_response (RmgMessage *msg, uint64_t action_response)
+{
+  g_assert (msg);
+  msg->data.action_response = action_response;
+}
+
+uint64_t
+rmg_message_get_action_response (RmgMessage *msg)
+{
+  g_assert (msg);
+  return msg->data.action_response;
+}
+
+void
+rmg_message_set_instance_status (RmgMessage *msg, uint64_t instance_status)
+{
+  g_assert (msg);
+  msg->data.instance_status = instance_status;
+}
+
+uint64_t
+rmg_message_get_instance_status (RmgMessage *msg)
+{
+  g_assert (msg);
+  return msg->data.instance_status;
+}
+
+void
+rmg_message_set_process_name (RmgMessage *msg, const gchar *process_name)
+{
+  g_assert (msg);
+  g_assert (process_name);
+  msg->data.process_name = g_strdup (process_name);
+}
+
+const gchar *
+rmg_message_get_process_name (RmgMessage *msg)
+{
+  g_assert (msg);
+  return msg->data.process_name;
+}
+
+void
+rmg_message_set_service_name (RmgMessage *msg, const gchar *service_name)
+{
+  g_assert (msg);
+  g_assert (service_name);
+  msg->data.service_name = g_strdup (service_name);
+}
+
+const gchar *
+rmg_message_get_service_name (RmgMessage *msg)
+{
+  g_assert (msg);
+  return msg->data.service_name;
+}
+
+void
+rmg_message_set_context_name (RmgMessage *msg, const gchar *context_name)
+{
+  g_assert (msg);
+  g_assert (context_name);
+  msg->data.context_name = g_strdup (context_name);
+}
+
+const gchar *
+rmg_message_get_context_name (RmgMessage *msg)
+{
+  g_assert (msg);
+  return msg->data.context_name;
 }
 
 RmgStatus
-rmg_message_set_version (RmgMessage *m,
-                         const gchar *version)
+rmg_message_read (gint fd, RmgMessage *msg)
 {
-  g_assert (m);
-  snprintf ((gchar*)m->hdr.version, RMG_VERSION_STRING_LEN, "%s", version);
+  struct iovec iov[RMG_MESSAGE_IOVEC_MAX_ARRAY] = {};
+  gint iov_index = 0;
+  gssize sz;
+
+  g_assert (msg);
+
+  /* set message header segments */
+  iov[iov_index].iov_base = &msg->hdr.hsh;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.hsh);
+  iov[iov_index].iov_base = &msg->hdr.session;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.session);
+  iov[iov_index].iov_base = &msg->hdr.version;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.version);
+  iov[iov_index].iov_base = &msg->hdr.type;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.type);
+  iov[iov_index].iov_base = &msg->hdr.size_of_arg1;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.size_of_arg1);
+  iov[iov_index].iov_base = &msg->hdr.size_of_arg2;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.size_of_arg2);
+  iov[iov_index].iov_base = &msg->hdr.size_of_arg3;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.size_of_arg3);
+  iov[iov_index].iov_base = &msg->hdr.size_of_arg4;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.size_of_arg4);
+
+  if ((sz = readv (fd, iov, iov_index)) <= 0)
+    return RMG_STATUS_ERROR;
+
+  memset (iov, 0, sizeof(iov));
+  iov_index = 0;
+
+  /* set message data segments */
+  switch (rmg_message_get_type (msg))
+    {
+    case RMG_MESSAGE_ACTION_RESPONSE:
+      /* arg1 */
+      iov[iov_index].iov_base = &msg->data.action_response;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg1;
+      break;
+
+    case RMG_MESSAGE_INSTANCE_STATUS:
+      /* arg1 */
+      iov[iov_index].iov_base = &msg->data.instance_status;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg1;
+      break;
+
+    case RMG_MESSAGE_REQUEST_CONTEXT_RESTART:
+    case RMG_MESSAGE_REQUEST_PLATFORM_RESTART:
+    case RMG_MESSAGE_REQUEST_FACTORY_RESET:
+      /* arg1 */
+      msg->data.service_name = g_new0 (gchar, msg->hdr.size_of_arg1);
+      iov[iov_index].iov_base = msg->data.service_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg1;
+
+      /* arg2 */
+      msg->data.context_name = g_new0 (gchar, msg->hdr.size_of_arg2);
+      iov[iov_index].iov_base = msg->data.context_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg2;
+      break;
+
+    case RMG_MESSAGE_INFORM_PROCESS_CRASH:
+      /* arg1 */
+      msg->data.process_name = g_new0 (gchar, msg->hdr.size_of_arg1);
+      iov[iov_index].iov_base = msg->data.process_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg1;
+
+      /* arg2 */
+      msg->data.context_name = g_new0 (gchar, msg->hdr.size_of_arg2);
+      iov[iov_index].iov_base = msg->data.context_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg2;
+      break;
+
+    case RMG_MESSAGE_INFORM_CLIENT_SERVICE_FAILED:
+    case RMG_MESSAGE_INFORM_PRIMARY_SERVICE_FAILED:
+      /* arg1 */
+      msg->data.service_name = g_new0 (gchar, msg->hdr.size_of_arg1);
+      iov[iov_index].iov_base = msg->data.service_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg1;
+
+      /* arg2 */
+      msg->data.context_name = g_new0 (gchar, msg->hdr.size_of_arg2);
+      iov[iov_index].iov_base = msg->data.context_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg2;
+      break;
+
+    case RMG_MESSAGE_REPLICA_DESCRIPTOR:
+      /* arg1 */
+      msg->data.context_name = g_new0 (gchar, msg->hdr.size_of_arg1);
+      iov[iov_index].iov_base = msg->data.context_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg1;
+      break;
+
+    default:
+      break;
+    }
+
+  /* read into the message structure */
+  if (iov_index > 0)
+    if ((sz = readv (fd, iov, iov_index)) <= 0)
+      return RMG_STATUS_ERROR;
+
   return RMG_STATUS_OK;
 }
 
 RmgStatus
-rmg_message_read (gint fd,
-                  RmgMessage *m)
+rmg_message_write (gint fd, RmgMessage *msg)
 {
+  struct iovec iov[RMG_MESSAGE_IOVEC_MAX_ARRAY] = {};
+  gint iov_index = 0;
   gssize sz;
 
-  g_assert (m);
+  g_assert (msg);
 
-  sz = read (fd, &m->hdr, sizeof(RmgMessageHdr));
-  if (sz != sizeof(RmgMessageHdr) || !rmg_message_is_valid (m))
+  /* set arguments size */
+  switch (rmg_message_get_type (msg))
+    {
+    case RMG_MESSAGE_ACTION_RESPONSE:
+      msg->hdr.size_of_arg1 = sizeof(msg->data.action_response);
+      break;
+
+    case RMG_MESSAGE_INSTANCE_STATUS:
+      msg->hdr.size_of_arg1 = sizeof(msg->data.instance_status);
+      break;
+
+    case RMG_MESSAGE_REQUEST_CONTEXT_RESTART:
+    case RMG_MESSAGE_REQUEST_PLATFORM_RESTART:
+    case RMG_MESSAGE_REQUEST_FACTORY_RESET:
+      msg->hdr.size_of_arg1 = (uint16_t)(sizeof(gchar) * strnlen (msg->data.service_name,
+                                                                  RMG_MESSAGE_MAX_NAME_LEN
+                                                                  + 1));
+      msg->hdr.size_of_arg2 = (uint16_t)(sizeof(gchar) * strnlen (msg->data.context_name,
+                                                                  RMG_MESSAGE_MAX_NAME_LEN
+                                                                  + 1));
+      break;
+
+    case RMG_MESSAGE_INFORM_PROCESS_CRASH:
+      msg->hdr.size_of_arg1 = (uint16_t)(sizeof(gchar) * strnlen (msg->data.process_name,
+                                                                  RMG_MESSAGE_MAX_NAME_LEN
+                                                                  + 1));
+      msg->hdr.size_of_arg2 = (uint16_t)(sizeof(gchar) * strnlen (msg->data.context_name,
+                                                                  RMG_MESSAGE_MAX_NAME_LEN
+                                                                  + 1));
+      break;
+
+    case RMG_MESSAGE_INFORM_CLIENT_SERVICE_FAILED:
+    case RMG_MESSAGE_INFORM_PRIMARY_SERVICE_FAILED:
+      msg->hdr.size_of_arg1 = (uint16_t)(sizeof(gchar) * strnlen (msg->data.service_name,
+                                                                  RMG_MESSAGE_MAX_NAME_LEN
+                                                                  + 1));
+      msg->hdr.size_of_arg2 = (uint16_t)(sizeof(gchar) * strnlen (msg->data.context_name,
+                                                                  RMG_MESSAGE_MAX_NAME_LEN
+                                                                  + 1));
+      break;
+
+    case RMG_MESSAGE_REPLICA_DESCRIPTOR:
+      msg->hdr.size_of_arg1 = (uint16_t)(sizeof(gchar) * strnlen (msg->data.context_name,
+                                                                  RMG_MESSAGE_MAX_NAME_LEN
+                                                                  + 1));
+      break;
+
+    default:
+      break;
+    }
+
+  /* set message header segments */
+  iov[iov_index].iov_base = &msg->hdr.hsh;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.hsh);
+  iov[iov_index].iov_base = &msg->hdr.session;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.session);
+  iov[iov_index].iov_base = &msg->hdr.version;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.version);
+  iov[iov_index].iov_base = &msg->hdr.type;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.type);
+  iov[iov_index].iov_base = &msg->hdr.size_of_arg1;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.size_of_arg1);
+  iov[iov_index].iov_base = &msg->hdr.size_of_arg2;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.size_of_arg2);
+  iov[iov_index].iov_base = &msg->hdr.size_of_arg3;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.size_of_arg3);
+  iov[iov_index].iov_base = &msg->hdr.size_of_arg4;
+  iov[iov_index++].iov_len = sizeof(msg->hdr.size_of_arg4);
+
+  if ((sz = writev (fd, iov, iov_index)) <= 0)
     return RMG_STATUS_ERROR;
 
-  m->data = calloc (1, m->hdr.data_size);
-  if (m->data == NULL)
-    return RMG_STATUS_ERROR;
+  memset (iov, 0, sizeof(iov));
+  iov_index = 0;
 
-  sz = read (fd, m->data, m->hdr.data_size);
+  /* set message data segments */
+  switch (rmg_message_get_type (msg))
+    {
+    case RMG_MESSAGE_ACTION_RESPONSE:
+      /* arg1 */
+      iov[iov_index].iov_base = &msg->data.action_response;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg1;
+      break;
 
-  return sz == m->hdr.data_size ? RMG_STATUS_OK : RMG_STATUS_ERROR;
-}
+    case RMG_MESSAGE_INSTANCE_STATUS:
+      /* arg1 */
+      iov[iov_index].iov_base = &msg->data.instance_status;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg1;
+      break;
 
-RmgStatus
-rmg_message_write (gint fd,
-                   RmgMessage *m)
-{
-  gssize sz;
+    case RMG_MESSAGE_REQUEST_CONTEXT_RESTART:
+    case RMG_MESSAGE_REQUEST_PLATFORM_RESTART:
+    case RMG_MESSAGE_REQUEST_FACTORY_RESET:
+      /* arg1 */
+      iov[iov_index].iov_base = msg->data.service_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg1;
 
-  g_assert (m);
+      /* arg2 */
+      iov[iov_index].iov_base = msg->data.context_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg2;
+      break;
 
-  if (!rmg_message_is_valid (m))
-    return RMG_STATUS_ERROR;
+    case RMG_MESSAGE_INFORM_PROCESS_CRASH:
+      /* arg1 */
+      iov[iov_index].iov_base = msg->data.process_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg1;
 
-  sz = write (fd, &m->hdr, sizeof(RmgMessageHdr));
-  if (sz != sizeof(RmgMessageHdr))
-    return RMG_STATUS_ERROR;
+      /* arg2 */
+      iov[iov_index].iov_base = msg->data.context_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg2;
+      break;
 
-  sz = write (fd, m->data, m->hdr.data_size);
+    case RMG_MESSAGE_INFORM_CLIENT_SERVICE_FAILED:
+    case RMG_MESSAGE_INFORM_PRIMARY_SERVICE_FAILED:
+      /* arg1 */
+      iov[iov_index].iov_base = msg->data.service_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg1;
 
-  return sz == m->hdr.data_size ? RMG_STATUS_OK : RMG_STATUS_ERROR;
+      /* arg2 */
+      iov[iov_index].iov_base = msg->data.context_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg2;
+      break;
+
+    case RMG_MESSAGE_REPLICA_DESCRIPTOR:
+      /* arg1 */
+      iov[iov_index].iov_base = msg->data.context_name;
+      iov[iov_index++].iov_len = msg->hdr.size_of_arg1;
+      break;
+
+    default:
+      break;
+    }
+
+  /* write into the message structure */
+  if (iov_index > 0)
+    if ((sz = writev (fd, iov, iov_index)) <= 0)
+      return RMG_STATUS_ERROR;
+
+  return RMG_STATUS_OK;
 }

@@ -1,38 +1,30 @@
-/* rmg-types.h
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-type.h
  */
 
 #pragma once
 
-#include "rmg-message-type.h"
-
-#include <glib.h>
 #include <elf.h>
+#include <glib.h>
 
 G_BEGIN_DECLS
 
@@ -42,24 +34,19 @@ G_BEGIN_DECLS
 
 #define RMG_EVENT_SOURCE(x) (GSource *)(x)
 
-typedef enum _RmgStatus {
-  RMG_STATUS_ERROR = -1,
-  RMG_STATUS_OK
-} RmgStatus;
+typedef enum _RmgStatus { RMG_STATUS_ERROR = -1, RMG_STATUS_OK } RmgStatus;
 
-typedef enum _RmgRunMode {
-  RUN_MODE_MASTER,
-  RUN_MODE_SLAVE
-} RmgRunMode;
+typedef enum _RmgRunMode { RUN_MODE_PRIMARY, RUN_MODE_REPLICA } RmgRunMode;
 
 /**
  * @enum Action type
  * @brief The type of action top perform sorted from low to high destructive
  *   Actions with an ID higher or equal ACTION_CONTEXT_RESET will be performed
- *   by master instance only.
+ *   by primary instance only.
  */
 typedef enum _RmgActionType {
   ACTION_INVALID,
+  ACTION_SERVICE_IGNORE,
   ACTION_SERVICE_RESET,
   ACTION_PUBLIC_DATA_RESET,
   ACTION_PRIVATE_DATA_RESET,
@@ -69,6 +56,41 @@ typedef enum _RmgActionType {
   ACTION_FACTORY_RESET,
   ACTION_GURU_MEDITATION /* must be the last entry */
 } RmgActionType;
+
+/**
+ * @enum Friend type
+ * @brief The type of friend
+ */
+typedef enum _RmgFriendType {
+  FRIEND_UNKNOWN,
+  FRIEND_PROCESS,
+  FRIEND_SERVICE,
+  FRIEND_INVALID
+} RmgFriendType;
+
+/**
+ * @enum Friend action type
+ * @brief The type of friend action
+ */
+typedef enum _RmgFriendActionType {
+  FRIEND_ACTION_UNKNOWN,
+  FRIEND_ACTION_START,
+  FRIEND_ACTION_STOP,
+  FRIEND_ACTION_RESTART,
+  FRIEND_ACTION_SIGNAL,
+  FRIEND_ACTION_INVALID
+} RmgFriendActionType;
+
+/**
+ * @struct RmgFriendResponseEntry
+ * @brief The RmgFriendResponseEntry data structure
+ */
+typedef struct _RmgFriendResponseEntry {
+  gchar *service_name;
+  RmgFriendActionType action;
+  glong argument;
+  glong delay;
+} RmgFriendResponseEntry;
 
 /* Preserve the size and order from RmgActionType */
 extern const gchar *g_action_name[];

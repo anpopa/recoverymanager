@@ -1,43 +1,39 @@
-/* rmg-application.h
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-application.h
  */
 
 #pragma once
 
+#include "rmg-checker.h"
 #include "rmg-defaults.h"
-#include "rmg-types.h"
-#include "rmg-logging.h"
-#include "rmg-options.h"
-#include "rmg-journal.h"
-#include "rmg-sdnotify.h"
-#include "rmg-monitor.h"
 #include "rmg-dispatcher.h"
 #include "rmg-executor.h"
+#include "rmg-journal.h"
+#include "rmg-logging.h"
+#include "rmg-monitor.h"
+#include "rmg-options.h"
+#include "rmg-sdnotify.h"
+#include "rmg-crashmonitor.h"
+#include "rmg-types.h"
 
 #include <glib.h>
 #include <stdlib.h>
@@ -46,17 +42,19 @@ G_BEGIN_DECLS
 
 /**
  * @struct RmgApplication
- * @brief Crashmanager application object referencing main objects
+ * @brief Crashmanager application object
  */
 typedef struct _RmgApplication {
   RmgOptions *options;
   RmgJournal *journal;
   RmgSDNotify *sdnotify;
   RmgMonitor *monitor;
+  RmgChecker *checker;
   RmgDispatcher *dispatcher;
   RmgExecutor *executor;
+  RmgCrashMonitor *crashmonitor;
   GMainLoop *mainloop;
-  grefcount rc;           /**< Reference counter variable  */
+  grefcount rc;
 } RmgApplication;
 
 /**
@@ -67,34 +65,35 @@ typedef struct _RmgApplication {
  * returned object. If the error is set the object is invalid and needs to be
  * released.
  */
-RmgApplication *rmg_application_new (const gchar *config, GError **error);
+RmgApplication *        rmg_application_new                 (const gchar *config,
+                                                             GError **error);
 
 /**
  * @brief Aquire RmgApplication object
  * @param app The object to aquire
  * @return The aquiered app object
  */
-RmgApplication *rmg_application_ref (RmgApplication *app);
+RmgApplication *        rmg_application_ref                 (RmgApplication *app);
 
 /**
- * @brief Release a RmgApplication object
+ * @brief Release RmgApplication object
  * @param app The rmg application object to release
  */
-void rmg_application_unref (RmgApplication *app);
+void                    rmg_application_unref               (RmgApplication *app);
 
 /**
- * @brief Execute rmg application
- * @param app The rmg application object
- * @return If run was succesful CDH_OK is returned
+ * @brief Execute RmgApplication
+ * @param app The RmgApplicationn object
+ * @return If run was succesful RMG_STATUS_OK is returned
  */
-RmgStatus rmg_application_execute (RmgApplication *app);
+RmgStatus               rmg_application_execute             (RmgApplication *app);
 
 /**
  * @brief Get main event loop reference
- * @param app The rmg application object
+ * @param app The RmgApplicationn object
  * @return A pointer to the main event loop
  */
-GMainLoop *rmg_application_get_mainloop (RmgApplication *app);
+GMainLoop *             rmg_application_get_mainloop        (RmgApplication *app);
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgApplication, rmg_application_unref);
 

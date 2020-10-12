@@ -5,8 +5,10 @@
 ###############################################################################
 [recoverymanager]
 # RunMode defines the runing mode the in which the service should start
-#   Valid values are auto, master, slave. Default to auto.
-RunMode = master
+#   Valid values are auto, primary, replica. Default to auto.
+RunMode = primary
+# Time in seconds before checking services integrity
+IntegrityCheckTimeout = 30
 # UnitsDirectory application database directory
 UnitsDirectory = @config_dir@/recoverymanager
 # DatabaseDirectory application database directory
@@ -26,7 +28,7 @@ PlatformRestartCommand = systemctl reboot
 # FactoryResetCommand defines the comand to reset platform data
 FactoryResetCommand = echo "No factory reset supported"
 # IpcSocketFile defines the path to the ipc unix domain socket file
-#     The recoverymanager will create and listen on this socket in master mode
+#     The recoverymanager will create and listen on this socket in primary mode
 IpcSocketFile = /run/recoverymanager/rmgr.sock
 # IpcSocketTimeout defines the number of seconds for an IO operation to block
 #     during IPC

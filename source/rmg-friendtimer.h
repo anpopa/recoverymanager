@@ -18,36 +18,24 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * \author Alin Popa <alin.popa@fxdata.ro>
- * \file rmg-relaxtimer.h
+ * \file rmg-friendtimer.h
  */
 
 #pragma once
 
-#include "rmg-journal.h"
 #include "rmg-types.h"
 
 #include <glib.h>
 
 G_BEGIN_DECLS
 
-/**
- * @struct RmgRelaxTimer
- * @brief The RmgRelaxTimer opaque data structure
- */
-typedef struct _RmgRelaxTimer {
-  RmgJournal *journal;
-  gchar *service_name;
-  glong rvector;
-  glong timeout;
-  grefcount rc;
-} RmgRelaxTimer;
-
 /*
- * @brief Create a new relaxtimer object
- * @return On success return a new RmgRelaxTimer object otherwise return NULL
+ * @brief Create a new friendtimer object
  */
-guint                   rmg_relaxtimer_trigger              (RmgJournal *journal, 
-                                                             const gchar *service_name,
-                                                             GError **error);
+void                    rmg_friendtimer_trigger             (const gchar *service_name,
+                                                             RmgFriendActionType action,
+                                                             glong argument,
+                                                             gpointer executor,
+                                                             guint timeout);
 
 G_END_DECLS

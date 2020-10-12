@@ -1,44 +1,38 @@
-/* rmg-application.c
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxapp.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-application.c
  */
 
 #include "rmg-application.h"
 #include "rmg-utils.h"
 
-#include <glib.h>
-#include <stdlib.h>
-#include <glib/gstdio.h>
+#include <errno.h>
 #include <fcntl.h>
-#include <sys/types.h>
+#include <glib.h>
+#include <glib/gstdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <errno.h>
 
 RmgRunMode g_run_mode;
 
@@ -52,18 +46,42 @@ get_run_mode (RmgOptions *options)
 
   opt_runmode = rmg_options_string_for (options, KEY_RUN_MODE);
 
-  if (g_strcmp0 (opt_runmode, "master") == 0)
-    return RUN_MODE_MASTER;
-  else if (g_strcmp0 (opt_runmode, "slave") == 0)
-    return RUN_MODE_SLAVE;
+  if (g_strcmp0 (opt_runmode, "primary") == 0)
+    return RUN_MODE_PRIMARY;
+  else if (g_strcmp0 (opt_runmode, "replica") == 0)
+    return RUN_MODE_REPLICA;
 
   /* auto is set so try auto detect */
   opt_sockaddr = rmg_options_string_for (options, KEY_IPC_SOCK_ADDR);
 
   if (g_access (opt_sockaddr, R_OK) == 0)
-    return RUN_MODE_SLAVE;
+    return RUN_MODE_REPLICA;
 
-  return RUN_MODE_MASTER;
+  return RUN_MODE_PRIMARY;
+}
+
+static void
+dbus_proxy_available_for_checker (gpointer _dbus_proxy, gpointer _checker)
+{
+  GDBusProxy *proxy = (GDBusProxy *)_dbus_proxy;
+  RmgChecker *checker = (RmgChecker *)_checker;
+
+  g_assert (proxy);
+  g_assert (checker);
+
+  rmg_checker_set_proxy (checker, proxy);
+}
+
+static void
+dbus_proxy_available_for_executor (gpointer _dbus_proxy, gpointer _executor)
+{
+  GDBusProxy *proxy = (GDBusProxy *)_dbus_proxy;
+  RmgExecutor *executor = (RmgExecutor *)_executor;
+
+  g_assert (proxy);
+  g_assert (executor);
+
+  rmg_executor_set_proxy (executor, proxy);
 }
 
 RmgApplication *
@@ -91,27 +109,44 @@ rmg_application_new (const gchar *config, GError **error)
 
   /* set global run mode flag */
   g_run_mode = get_run_mode (app->options);
-  if (g_run_mode == RUN_MODE_MASTER)
-    g_info ("Recovery manager running as master");
+  if (g_run_mode == RUN_MODE_PRIMARY)
+    g_info ("Recovery manager running as primary");
   else
-    g_info ("Recovery manager running as slave");
+    g_info ("Recovery manager running as replica");
 
   /* construct executor */
   app->executor = rmg_executor_new (app->options, app->journal);
 
+  /* once the executor is constructed the socket is created in server mode */
+  rmg_sdnotify_send_ready (app->sdnotify);
+
   /* construct dispatcher and return if an error is set */
-  app->dispatcher = rmg_dispatcher_new (app->options,
-                                        app->journal,
-                                        app->executor,
-                                        error);
+  app->dispatcher = rmg_dispatcher_new (app->options, app->journal, app->executor, error);
   if (*error != NULL)
     return app;
 
   /* construct monitor */
   app->monitor = rmg_monitor_new (app->dispatcher);
-
   rmg_monitor_build_proxy (app->monitor);
   rmg_monitor_read_services (app->monitor);
+
+  app->checker = rmg_checker_new (app->journal, app->options);
+  rmg_checker_check_services (app->checker);
+
+  /* rmg-monitor builds the dbus proxy and we register a callback to get it for
+   * checker and executor */
+  rmg_monitor_register_proxy_available_callback (app->monitor,
+                                                 dbus_proxy_available_for_checker,
+                                                 (gpointer)app->checker);
+  rmg_monitor_register_proxy_available_callback (app->monitor,
+                                                 dbus_proxy_available_for_executor,
+                                                 (gpointer)app->executor);
+
+  if (g_run_mode == RUN_MODE_PRIMARY)
+    {
+      app->crashmonitor = rmg_crashmonitor_new (app->dispatcher);
+      rmg_crashmonitor_build_proxy (app->crashmonitor);
+    }
 
   /* construct mainloop noexept */
   app->mainloop = g_main_loop_new (NULL, TRUE);
@@ -148,6 +183,12 @@ rmg_application_unref (RmgApplication *app)
 
       if (app->monitor != NULL)
         rmg_monitor_unref (app->monitor);
+
+      if (app->checker != NULL)
+        rmg_checker_unref (app->checker);
+
+      if (app->crashmonitor != NULL)
+        rmg_crashmonitor_unref (app->crashmonitor);
 
       if (app->mainloop != NULL)
         g_main_loop_unref (app->mainloop);

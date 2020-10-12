@@ -1,30 +1,24 @@
-/* rmg-relaxtimer.c
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-relaxtimer.c
  */
 
 #include "rmg-relaxtimer.h"
@@ -39,7 +33,9 @@ relaxtimer_callback (gpointer user_data)
 
   g_assert (relaxtimer);
 
-  current_rvector = rmg_journal_get_rvector (relaxtimer->journal, relaxtimer->service_name, &error);
+  current_rvector = rmg_journal_get_rvector (relaxtimer->journal,
+                                             relaxtimer->service_name,
+                                             &error);
   if (error != NULL)
     {
       g_warning ("Fail to read rvector on timer callback for service '%s'. Error: %s",
@@ -50,7 +46,10 @@ relaxtimer_callback (gpointer user_data)
     {
       if (current_rvector == relaxtimer->rvector)
         {
-          rmg_journal_set_rvector (relaxtimer->journal, relaxtimer->service_name, 0, &error);
+          rmg_journal_set_rvector (relaxtimer->journal,
+                                   relaxtimer->service_name,
+                                   0,
+                                   &error);
           if (error != NULL)
             {
               g_warning ("Fail to reset rvector on timer callback for service '%s'. Error: %s",

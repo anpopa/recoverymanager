@@ -1,38 +1,32 @@
-/* rmg-mentry.h
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-mentry.h
  */
 
 #pragma once
 
 #include "rmg-types.h"
 
-#include <glib.h>
 #include <gio/gio.h>
+#include <glib.h>
 
 G_BEGIN_DECLS
 
@@ -53,12 +47,16 @@ typedef enum _ServiceActiveSubstate {
   SERVICE_SUBSTATE_STOP_SIGTERM
 } ServiceActiveSubstate;
 
+typedef void            (*RmgMEntryAsyncStatus)             (gpointer _mentry,
+                                                             gpointer _monitor,
+                                                             RmgStatus status);
+
 /**
  * @struct Service monitor entry
  * @brief Reprezentation of a service with state from systemd
  */
 typedef struct _RmgMEntry {
-  grefcount rc;     /**< Reference counter variable  */
+  grefcount rc;
   GDBusProxy *proxy;
   GDBusProxy *manager_proxy;
   gpointer dispatcher;
@@ -66,6 +64,8 @@ typedef struct _RmgMEntry {
   gchar *object_path;
   ServiceActiveState active_state;
   ServiceActiveSubstate active_substate;
+  RmgMEntryAsyncStatus monitor_callback;
+  gpointer monitor_object;
 } RmgMEntry;
 
 #define RMG_MENTRY_TO_PTR(e) ((gpointer)(RmgMEntry *)(e))
@@ -74,56 +74,59 @@ typedef struct _RmgMEntry {
  * @brief Create a new mentry object
  * @return On success return a new RmgMEntry object otherwise return NULL
  */
-RmgMEntry *rmg_mentry_new (const gchar *service_name,
-                           const gchar *object_path,
-                           ServiceActiveState active_state,
-                           ServiceActiveSubstate active_substate);
+RmgMEntry *             rmg_mentry_new                      (const gchar *service_name,
+                                                             const gchar *object_path,
+                                                             ServiceActiveState active_state,
+                                                             ServiceActiveSubstate active_substate);
 
 /**
  * @brief Aquire mentry object
  * @param mentry Pointer to the mentry object
  */
-RmgMEntry *rmg_mentry_ref (RmgMEntry *mentry);
+RmgMEntry *             rmg_mentry_ref                      (RmgMEntry *mentry);
 
 /**
  * @brief Release mentry object
  * @param mentry Pointer to the mentry object
  */
-void rmg_mentry_unref (RmgMEntry *mentry);
+void                    rmg_mentry_unref                    (RmgMEntry *mentry);
 
 /**
  * @brief Set a reference to manager proxy to pass to dispatcher event
  */
-void rmg_mentry_set_manager_proxy (RmgMEntry *mentry, GDBusProxy *manager_proxy);
+void                    rmg_mentry_set_manager_proxy        (RmgMEntry *mentry, 
+                                                             GDBusProxy *manager_proxy);
 
 /*
  * @brief Get service active state from string
  * @return Service Active State
  */
-ServiceActiveState rmg_mentry_active_state_from (const gchar *state_name);
+ServiceActiveState      rmg_mentry_active_state_from        (const gchar *state_name);
 
 /*
  * @brief Get service active substate from string
  * @return Service Active Subtate
  */
-ServiceActiveSubstate rmg_mentry_active_substate_from (const gchar *substate_name);
+ServiceActiveSubstate   rmg_mentry_active_substate_from     (const gchar *substate_name);
 
 /*
  * @brief Get service active state from string
  * @return Service Active State
  */
-const gchar *rmg_mentry_get_active_state (ServiceActiveState state);
+const gchar *           rmg_mentry_get_active_state         (ServiceActiveState state);
 
 /*
  * @brief Get service active substate from string
  * @return Service Active Subtate
  */
-const gchar *rmg_mentry_get_active_substate (ServiceActiveSubstate state);
+const gchar *           rmg_mentry_get_active_substate      (ServiceActiveSubstate state);
 
 /*
  * @brief Build mentry proxy and dispatch events
- * @return Build status
  */
-RmgStatus rmg_mentry_build_proxy (RmgMEntry *mentry, gpointer _dispatcher);
+void                    rmg_mentry_build_proxy_async        (RmgMEntry *mentry,
+                                                             gpointer _dispatcher,
+                                                             RmgMEntryAsyncStatus monitor_callback,
+                                                             gpointer monitor_data);
 
 G_END_DECLS

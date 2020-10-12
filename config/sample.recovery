@@ -1,13 +1,47 @@
-<service>sample.service</service>
-<description>Sample service recovery unit</description>
-<relaxtime>300</relaxtime>
+<!-- The service propriety should match the service unit from service manager   -->
+<!-- The relaxtime attribute defines the time value in seconds the manager      -->
+<!-- shall use to consider the service recovered after a recovery action.       -->
+<!-- The timeout value used to mark a service recoverd is relaxtime * rvector   -->
+<!-- The checkstart attribute if true signals that the manager should check     -->
+<!-- if the service is started by the service manager during boot (after 30s)   -->
+<!-- The privatedata and publicdata defines the paths to pass for delete        -->
+<!-- private and public data actions.                                           -->
+
+<service relaxtime="300" checkstart="false">sample.service</service>
 <privatedata>/var/lib/sample/private</privatedata>
 <publicdata>/var/lib/sample/public</publicdata>
 <actions>
+	<!-- An action can have two attributes. The retry attribute defines the     -->
+	<!-- number of times the action should be repeted before moving to the next -->
+	<!-- action. The reset attribute if true signals that the rvector should    -->
+	<!-- reset after action is performed. Actions after reset marked action     -->
+	<!-- will be ignored.                                                       -->
     <action type="resetService" retry="3">Reset Service</action>
+    <action type="disableService">Disable this lifecycle</action>
     <action type="resetPublicData">Reset Public Data</action>
     <action type="resetPrivateData">Reset Private Data</action>
     <action type="contextRestart">Restart Container</action>
     <action type="platformRestart">Restart Hardware</action>
     <action type="factoryReset">Do critical factory reset</action>
 </actions>
+<friends>
+    <!-- A friend is a proccess or service in the service context or a another  -->
+    <!-- context for which the current service should take action in case of a  -->
+    <!-- crash. The action can be one of "start", "stop", "restart", "signal"   -->
+    <!-- with signal accepting the signal number in "arg" attribute. The action -->
+    <!-- is performed on current service after "delay" seconds without impact   -->
+    <!-- on service recovery state. The "context" sets the hostname where the   -->
+    <!-- subject is running. If context is omitted the current hostname is set. -->
+    <!-- A service recovery unit can have a process friend in the same context, -->
+    <!-- but the service friends are ignored in the same context since this is  -->
+    <!-- directly managed by the service manager.                               -->
+    <friend type="process" action="restart" delay="10" context="debian">
+      dummyprocess1
+    </friend>
+    <friend type="process" action="signal" arg="1" delay="3" context="container1">
+      dummyprocess2
+    </friend>
+    <friend type="service" action="restart" delay="5" context="container2">
+      dummy.service
+    </friend>
+</friends>

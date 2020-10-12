@@ -1,35 +1,29 @@
-/* rmg-monitor.c
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-monitor.c
  */
 
 #include "rmg-monitor.h"
-#include "rmg-mentry.h"
 #include "rmg-devent.h"
+#include "rmg-mentry.h"
 #include "rmg-relaxtimer.h"
 
 const gchar *sd_dbus_name = "org.freedesktop.systemd1";
@@ -39,7 +33,6 @@ const gchar *sd_dbus_interface_manager = "org.freedesktop.systemd1.Manager";
 
 /**
  * @brief Post new event
- *
  * @param monitor A pointer to the monitor object
  * @param type The type of the new event to be posted
  */
@@ -71,6 +64,11 @@ static void monitor_source_destroy_notify (gpointer _monitor);
 static void monitor_queue_destroy_notify (gpointer _monitor);
 
 /**
+ * @brief Initialization status callback for a new mentry
+ */
+static void mentry_init_status (gpointer _mentry, gpointer _monitor, RmgStatus status);
+
+/**
  * @brief Build proxy local
  */
 static void monitor_build_proxy (RmgMonitor *monitor);
@@ -95,10 +93,14 @@ static void add_service (RmgMonitor *monitor,
                          ServiceActiveSubstate active_substate);
 
 /**
+ * @brief Callback for a notify proxy entry
+ */
+static void call_notify_proxy_entry (gpointer _notify_object, gpointer _dbus_proxy);
+
+/**
  * @brief GSourceFuncs vtable
  */
-static GSourceFuncs monitor_source_funcs =
-{
+static GSourceFuncs monitor_source_funcs = {
   monitor_source_prepare,
   NULL,
   monitor_source_dispatch,
@@ -108,8 +110,7 @@ static GSourceFuncs monitor_source_funcs =
 };
 
 static void
-post_monitor_event (RmgMonitor *monitor,
-                    MonitorEventType type)
+post_monitor_event (RmgMonitor *monitor, MonitorEventType type)
 {
   RmgMonitorEvent *e = NULL;
 
@@ -122,8 +123,7 @@ post_monitor_event (RmgMonitor *monitor,
 }
 
 static gboolean
-monitor_source_prepare (GSource *source,
-                        gint *timeout)
+monitor_source_prepare (GSource *source, gint *timeout)
 {
   RmgMonitor *monitor = (RmgMonitor *)source;
 
@@ -133,9 +133,7 @@ monitor_source_prepare (GSource *source,
 }
 
 static gboolean
-monitor_source_dispatch (GSource *source,
-                         GSourceFunc callback,
-                         gpointer _monitor)
+monitor_source_dispatch (GSource *source, GSourceFunc callback, gpointer _monitor)
 {
   RmgMonitor *monitor = (RmgMonitor *)source;
   gpointer event = g_async_queue_try_pop (monitor->queue);
@@ -150,8 +148,7 @@ monitor_source_dispatch (GSource *source,
 }
 
 static gboolean
-monitor_source_callback (gpointer _monitor,
-                         gpointer _event)
+monitor_source_callback (gpointer _monitor, gpointer _event)
 {
   RmgMonitor *monitor = (RmgMonitor *)_monitor;
   RmgMonitorEvent *event = (RmgMonitorEvent *)_event;
@@ -198,8 +195,7 @@ monitor_queue_destroy_notify (gpointer _monitor)
 }
 
 gint
-find_service_by_name (gconstpointer _entry,
-                      gconstpointer _service_name)
+find_service_by_name (gconstpointer _entry, gconstpointer _service_name)
 {
   const RmgMEntry *entry = (const RmgMEntry *)_entry;
   const gchar *service_name = (const gchar *)_service_name;
@@ -212,9 +208,9 @@ find_service_by_name (gconstpointer _entry,
 
 static void
 on_manager_signal (GDBusProxy *proxy,
-                   gchar      *sender_name,
-                   gchar      *signal_name,
-                   GVariant   *parameters,
+                   gchar *sender_name,
+                   gchar *signal_name,
+                   GVariant *parameters,
                    gpointer user_data)
 {
   RmgMonitor *monitor = (RmgMonitor *)user_data;
@@ -238,12 +234,25 @@ on_manager_signal (GDBusProxy *proxy,
                        SERVICE_SUBSTATE_DEAD);
         }
       else
-        {
-          g_warning ("Fail to read date on UnitNew signal");
-        }
+        g_warning ("Fail to read date on UnitNew signal");
     }
 }
 
+static void
+call_notify_proxy_entry (gpointer _notify_object, gpointer _dbus_proxy)
+
+{
+  RmgMonitorNotifyProxy *notify_object = (RmgMonitorNotifyProxy *)_notify_object;
+  GDBusProxy *proxy = (GDBusProxy *)_dbus_proxy;
+
+  g_assert (notify_object);
+  g_assert (proxy);
+
+  if (notify_object->callback != NULL)
+    notify_object->callback (proxy, notify_object->data);
+
+  /* we don't free the notify object since will be freed with monitor */
+}
 
 static void
 monitor_build_proxy (RmgMonitor *monitor)
@@ -254,23 +263,25 @@ monitor_build_proxy (RmgMonitor *monitor)
 
   monitor->proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
                                                   G_DBUS_PROXY_FLAGS_NONE,
-                                                  NULL, /* GDBusInterfaceInfo */
+                                                  NULL,   /* GDBusInterfaceInfo */
                                                   sd_dbus_name,
                                                   sd_dbus_object_path,
                                                   sd_dbus_interface_manager,
-                                                  NULL, /* GCancellable */
+                                                  NULL,   /* GCancellable */
                                                   &error);
+
   if (error != NULL)
-    {
-      g_warning ("Fail to build proxy for Manager. Error %s",
-                 error->message);
-    }
+    g_warning ("Fail to build proxy for Manager. Error %s", error->message);
   else
     {
       g_signal_connect (monitor->proxy,
                         "g-signal",
                         G_CALLBACK (on_manager_signal),
                         monitor);
+
+      g_list_foreach (monitor->notify_proxy,
+                      call_notify_proxy_entry,
+                      monitor->proxy);
     }
 }
 
@@ -279,6 +290,24 @@ rmg_monitor_get_manager_proxy (RmgMonitor *monitor)
 {
   g_assert (monitor);
   return monitor->proxy;
+}
+
+static void
+mentry_init_status (gpointer _mentry, gpointer _monitor, RmgStatus status)
+{
+  RmgMonitor *monitor = (RmgMonitor *)_monitor;
+  RmgMEntry *mentry = (RmgMEntry *)_mentry;
+
+  if (status != RMG_STATUS_OK)
+    {
+      g_warning ("Fail to initialized mentry for service '%s'", mentry->service_name);
+      rmg_mentry_unref (mentry);
+    }
+  else
+    {
+      g_info ("Monitoring unit='%s' path='%s'", mentry->service_name, mentry->object_path);
+      monitor->services = g_list_prepend (monitor->services, mentry);
+    }
 }
 
 static void
@@ -297,37 +326,25 @@ add_service (RmgMonitor *monitor,
   if (!g_str_has_suffix (service_name, ".service"))
     return;
 
-  check_existent = g_list_find_custom (monitor->services,
-                                       service_name,
-                                       find_service_by_name);
+  check_existent = g_list_find_custom (monitor->services, service_name, find_service_by_name);
 
   if (check_existent == NULL)
     {
-      RmgMEntry *entry = rmg_mentry_new (service_name,
-                                         object_path,
-                                         active_state,
-                                         active_substate);
+      RmgMEntry *entry = rmg_mentry_new (service_name, object_path, active_state, active_substate);
 
       rmg_mentry_set_manager_proxy (entry, rmg_monitor_get_manager_proxy (monitor));
-
-      if (rmg_mentry_build_proxy (entry, monitor->dispatcher) != RMG_STATUS_OK)
-        {
-          g_warning ("Fail to build proxy for new service '%s'", service_name);
-          rmg_mentry_unref (entry);
-        }
-      else
-        {
-          g_info ("Monitoring unit='%s' path='%s'", service_name, object_path);
-          monitor->services = g_list_prepend (monitor->services, entry);
-        }
+      rmg_mentry_build_proxy_async (entry,
+                                    monitor->dispatcher,
+                                    mentry_init_status,
+                                    (gpointer)monitor);
     }
 }
 
 static void
 monitor_read_services (RmgMonitor *monitor)
 {
+  g_autoptr (GVariant) service_list = NULL;
   g_autoptr (GError) error = NULL;
-  g_autoptr (GVariant) service_list;
 
   g_assert (monitor);
 
@@ -345,10 +362,7 @@ monitor_read_services (RmgMonitor *monitor)
                                          NULL,
                                          &error);
   if (error != NULL)
-    {
-      g_warning ("Fail to call ListUnits on Manager proxy. Error %s",
-                 error->message);
-    }
+    g_warning ("Fail to call ListUnits on Manager proxy. Error %s", error->message);
   else
     {
       const gchar *unitname = NULL;
@@ -378,10 +392,7 @@ monitor_read_services (RmgMonitor *monitor)
                                   &jobtype,
                                   &jobobjectpath))
         {
-          if (unitname != NULL
-              && objectpath != NULL
-              && activestate != NULL
-              && substate != NULL)
+          if (unitname != NULL && objectpath != NULL && activestate != NULL && substate != NULL)
             {
               add_service (monitor,
                            unitname,
@@ -397,7 +408,7 @@ static void
 monitor_add_relax_timer (gpointer _journal, gpointer _data)
 {
   RmgJournal *journal = (RmgJournal *)_journal;
-  const gchar *service_name = (const gchar*)_data;
+  const gchar *service_name = (const gchar *)_data;
 
   g_autoptr (GError) error = NULL;
 
@@ -431,11 +442,16 @@ remove_service_entry (gpointer _entry)
   rmg_mentry_unref ((RmgMEntry *)_entry);
 }
 
+static void
+remove_notify_proxy_entry (gpointer _entry)
+{
+  g_free (_entry);
+}
+
 RmgMonitor *
 rmg_monitor_new (RmgDispatcher *dispatcher)
 {
-  RmgMonitor *monitor = (RmgMonitor *)g_source_new (&monitor_source_funcs,
-                                                    sizeof(RmgMonitor));
+  RmgMonitor *monitor = (RmgMonitor *)g_source_new (&monitor_source_funcs, sizeof(RmgMonitor));
 
   g_assert (monitor);
   g_assert (dispatcher);
@@ -478,6 +494,7 @@ rmg_monitor_unref (RmgMonitor *monitor)
 
       g_async_queue_unref (monitor->queue);
       g_list_free_full (monitor->services, remove_service_entry);
+      g_list_free_full (monitor->notify_proxy, remove_notify_proxy_entry);
       g_source_unref (RMG_EVENT_SOURCE (monitor));
     }
 }
@@ -492,4 +509,23 @@ void
 rmg_monitor_read_services (RmgMonitor *monitor)
 {
   post_monitor_event (monitor, MONITOR_EVENT_READ_SERVICES);
+}
+
+void
+rmg_monitor_register_proxy_available_callback (RmgMonitor *monitor,
+                                               RmgMonitorProxyAvailableCallback callback,
+                                               gpointer data)
+{
+  RmgMonitorNotifyProxy *notify = NULL;
+
+  g_assert (monitor);
+  g_assert (callback);
+  g_assert (data);
+
+  notify = g_new0 (RmgMonitorNotifyProxy, 1);
+
+  notify->callback = callback;
+  notify->data = data;
+
+  monitor->notify_proxy = g_list_prepend (monitor->notify_proxy, notify);
 }

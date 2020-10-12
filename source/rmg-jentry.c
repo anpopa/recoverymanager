@@ -1,37 +1,44 @@
-/* rmg-jentry.c
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-jentry.c
  */
 
 #include "rmg-jentry.h"
 
 static void
-action_entry_free (gpointer entry)
+action_entry_free (gpointer _entry)
 {
+  g_assert (_entry);
+  g_free (_entry);
+}
+
+static void
+friend_entry_free (gpointer _entry)
+{
+  RmgFEntry *entry = (RmgFEntry *)_entry;
+
+  g_assert (entry);
+
+  g_free (entry->friend_name);
+  g_free (entry->friend_context);
   g_free (entry);
 }
 
@@ -46,7 +53,7 @@ rmg_jentry_new (gulong version)
   jentry->relaxing = FALSE;
   jentry->actions = NULL;
 
-  /* the first action will start when rvector 1 */
+  /* the first action will start when rvector is 1 */
   jentry->rvector = 1;
 
   return jentry;
@@ -80,6 +87,7 @@ rmg_jentry_unref (RmgJEntry *jentry)
         g_rand_free (jentry->hash_generator);
 
       g_list_free_full (jentry->actions, action_entry_free);
+      g_list_free_full (jentry->friends, friend_entry_free);
 
       g_free (jentry);
     }
@@ -137,10 +145,18 @@ rmg_jentry_set_timeout (RmgJEntry *jentry, glong timeout)
 }
 
 void
+rmg_jentry_set_checkstart (RmgJEntry *jentry, gboolean check_start)
+{
+  g_assert (jentry);
+  jentry->check_start = check_start;
+}
+
+void
 rmg_jentry_add_action (RmgJEntry *jentry,
                        RmgActionType type,
                        glong trigger_level_min,
-                       glong trigger_level_max)
+                       glong trigger_level_max,
+                       gboolean reset_after)
 {
   RmgAEntry *action = g_new0 (RmgAEntry, 1);
 
@@ -151,8 +167,35 @@ rmg_jentry_add_action (RmgJEntry *jentry,
   action->type = type;
   action->trigger_level_min = trigger_level_min;
   action->trigger_level_max = trigger_level_max;
+  action->reset_after = reset_after;
 
   jentry->actions = g_list_append (jentry->actions, RMG_AENTRY_TO_PTR (action));
+}
+
+void
+rmg_jentry_add_friend (RmgJEntry *jentry,
+                       const gchar *friend_name,
+                       const gchar *friend_context,
+                       RmgFriendType type,
+                       RmgFriendActionType action,
+                       glong argument,
+                       glong delay)
+{
+  RmgFEntry *friend = g_new0 (RmgFEntry, 1);
+
+  g_assert (jentry);
+  g_assert (friend_name);
+  g_assert (friend_context);
+
+  friend->hash = (gulong)g_rand_int (jentry->hash_generator);
+  friend->friend_name = g_strdup (friend_name);
+  friend->friend_context = g_strdup (friend_context);
+  friend->type = type;
+  friend->action = action;
+  friend->delay = delay;
+  friend->argument = argument;
+
+  jentry->friends = g_list_append (jentry->friends, RMG_FENTRY_TO_PTR (friend));
 }
 
 gulong
@@ -204,6 +247,13 @@ rmg_jentry_get_timeout (RmgJEntry *jentry)
   return jentry->timeout;
 }
 
+gboolean
+rmg_jentry_get_checkstart (RmgJEntry *jentry)
+{
+  g_assert (jentry);
+  return jentry->check_start;
+}
+
 const GList *
 rmg_jentry_get_actions (RmgJEntry *jentry)
 {
@@ -211,3 +261,9 @@ rmg_jentry_get_actions (RmgJEntry *jentry)
   return jentry->actions;
 }
 
+const GList *
+rmg_jentry_get_friends (RmgJEntry *jentry)
+{
+  g_assert (jentry);
+  return jentry->friends;
+}

@@ -1,6 +1,4 @@
-<service>echos3.service</service>
-<description>Echo service S3 recovery unit</description>
-<relaxtime>60</relaxtime>
+<service relaxtime="60" checkstart="false">echos3.service</service>
 <privatedata>/var/lib/echos3/private</privatedata>
 <publicdata>/var/lib/echos3/public</publicdata>
 <actions>

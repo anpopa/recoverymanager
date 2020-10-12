@@ -1,42 +1,39 @@
-/* rmg-main.c
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-main.c
  */
 
 #include "rmg-application.h"
 #include "rmg-utils.h"
 
-#include <glib.h>
-#include <stdlib.h>
-#include <glib/gstdio.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
+#include <glib.h>
+#include <glib/gstdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#ifdef WITH_EPILOG
+#include <cdh-epilog.h>
+#endif
 
 static GMainLoop *g_mainloop = NULL;
 
@@ -59,19 +56,20 @@ main (gint argc, gchar *argv[])
   gboolean version = FALSE;
   RmgStatus status = RMG_STATUS_OK;
 
-  GOptionEntry main_entries[] = {
-    { "version", 'v', 0, G_OPTION_ARG_NONE, &version, "Show program version", "" },
+  GOptionEntry main_entries[] =
+  { { "version", 'v', 0, G_OPTION_ARG_NONE, &version, "Show program version", "" },
     { "config", 'c', 0, G_OPTION_ARG_FILENAME, &config_path, "Override configuration file", "" },
     { "logid", 'i', 0, G_OPTION_ARG_STRING, &logid, "Use string as log id (default to RMGR)", "" },
-    { NULL }
-  };
+    { 0 } };
 
   signal (SIGINT, terminate);
   signal (SIGTERM, terminate);
+#ifdef WITH_EPILOG
+  cdh_epilog_register_crash_handlers (NULL);
+#endif
 
   context = g_option_context_new ("- Recovery manager service daemon");
-  g_option_context_set_summary (context,
-                                "The service listen for Recoveryhandler events and manage its output");
+  g_option_context_set_summary (context, "The system recovery managerdaemon");
   g_option_context_add_main_entries (context, main_entries, NULL);
 
   if (!g_option_context_parse (context, &argc, &argv, &error))
@@ -105,15 +103,14 @@ main (gint argc, gchar *argv[])
         }
       else
         {
-          g_info ("Recoverymanager service started for OS version '%s'", rmg_utils_get_osversion ());
+          g_info ("Recoverymanager service started for OS version '%s'",
+                  rmg_utils_get_osversion ());
           g_mainloop = rmg_application_get_mainloop (app);
           status = rmg_application_execute (app);
         }
     }
   else
-    {
-      g_warning ("Cannot open configuration file %s", config_path);
-    }
+    g_warning ("Cannot open configuration file %s", config_path);
 
   rmg_logging_close ();
 

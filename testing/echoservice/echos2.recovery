@@ -1,6 +1,4 @@
-<service>echos2.service</service>
-<description>Echo service S2 recovery unit</description>
-<relaxtime>60</relaxtime>
+<service relaxtime="60" checkstart="false">echos2.service</service>
 <privatedata>/var/lib/echos2/private</privatedata>
 <publicdata>/var/lib/echos2/public</publicdata>
 <actions>

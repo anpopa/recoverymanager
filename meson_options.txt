@@ -1,4 +1,5 @@
 option('CONFDIR', type : 'string', value : '/etc', description : 'System configuration directory')
 option('LXC', type : 'boolean', value : false, description : 'Build LXC support for container mapping')
 option('GENIVI_DLT', type : 'boolean', value : false, description : 'Use GENIVI infrustructure for logging')
+option('CDH_EPILOG', type : 'boolean', value : false, description : 'Register for crash epilog')
 option('TESTS', type : 'boolean', value : false, description : 'Build unit tests')

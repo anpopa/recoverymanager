@@ -1,33 +1,29 @@
-/* rmg-executor.c
+/*
+ * SPDX license identifier: GPL-2.0-or-later
  *
- * Copyright 2019 Alin Popa <alin.popa@fxdata.ro>
+ * Copyright (C) 2019-2020 Alin Popa
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Except as contained in this notice, the name(s) of the above copyright
- * holders shall not be used in advertising or otherwise to promote the sale,
- * use or other dealings in this Software without prior written
- * authorization.
+ * \author Alin Popa <alin.popa@fxdata.ro>
+ * \file rmg-executor.c
  */
 
 #include "rmg-executor.h"
+#include "rmg-friendtimer.h"
+#include "rmg-utils.h"
 
 #ifdef WITH_LXC
 #include <lxc/lxccontainer.h>
@@ -40,7 +36,9 @@
  * @param type The type of the new event to be posted
  * @param service_name The service name having this event
  */
-static void post_executor_event (RmgExecutor *executor, ExecutorEventType type, RmgDEvent *dispatcher_event);
+static void post_executor_event (RmgExecutor *executor,
+                                 ExecutorEventType type,
+                                 RmgDEvent *dispatcher_event);
 
 /**
  * @brief GSource prepare function
@@ -50,7 +48,9 @@ static gboolean executor_source_prepare (GSource *source, gint *timeout);
 /**
  * @brief GSource dispatch function
  */
-static gboolean executor_source_dispatch (GSource *source, GSourceFunc callback, gpointer _executor);
+static gboolean executor_source_dispatch (GSource *source,
+                                          GSourceFunc callback,
+                                          gpointer _executor);
 
 /**
  * @brief GSource callback function
@@ -70,78 +70,102 @@ static void executor_queue_destroy_notify (gpointer _executor);
 /**
  * @brief Process service restart event
  */
-static void do_process_service_restart_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void do_process_service_restart_event (RmgExecutor *executor,
+                                              RmgDEvent *dispatcher_event);
+/**
+ * @brief Process inform process crash event
+ */
+static void do_process_friend_crash_event (RmgExecutor *executor,
+                                           RmgDEvent *dispatcher_event,
+                                           RmgFriendType type);
 
 /**
  * @brief Process service reset public data event
  */
-static void do_process_service_reset_public_data_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void
+do_process_service_reset_public_data_event (RmgExecutor *executor,
+                                            RmgDEvent *dispatcher_event);
 
 /**
  * @brief Process service reset private data event
  */
-static void do_process_service_reset_private_data_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void
+do_process_service_reset_private_data_event (RmgExecutor *executor,
+                                             RmgDEvent *dispatcher_event);
 
 /**
  * @brief Process service disable event
  */
-static void do_process_service_disable_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void do_process_service_disable_event (RmgExecutor *executor,
+                                              RmgDEvent *dispatcher_event);
 
 /**
  * @brief Process service context restart event
  */
-static void do_process_context_restart_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void do_process_context_restart_event (RmgExecutor *executor,
+                                              RmgDEvent *dispatcher_event);
 
 /**
- * @brief Process service context restart master
+ * @brief Process service context restart for primary instance
  */
-static void do_process_context_restart_event_master (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void
+do_process_context_restart_event_primary (RmgExecutor *executor,
+                                          RmgDEvent *dispatcher_event);
 
 /**
- * @brief Process service context restart slave
+ * @brief Process service context restart for replica instance
  */
-static void do_process_context_restart_event_slave (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void do_process_context_restart_event_replica (RmgExecutor *executor,
+                                                      RmgDEvent *dispatcher_event);
 
 /**
  * @brief Process service platform restart event
  */
-static void do_process_platform_restart_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void do_process_platform_restart_event (RmgExecutor *executor,
+                                               RmgDEvent *dispatcher_event);
 
 /**
- * @brief Process service platform restart event master
+ * @brief Process service platform restart event for primary instance
  */
-static void do_process_platform_restart_event_master (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void
+do_process_platform_restart_event_primary (RmgExecutor *executor,
+                                           RmgDEvent *dispatcher_event);
 
 /**
- * @brief Process service platform restart event slave
+ * @brief Process service platform restart event for replica instance
  */
-static void do_process_platform_restart_event_slave (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void
+do_process_platform_restart_event_replica (RmgExecutor *executor,
+                                           RmgDEvent *dispatcher_event);
 
 /**
  * @brief Process service factory reset event
  */
-static void do_process_factory_reset_event (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void do_process_factory_reset_event (RmgExecutor *executor,
+                                            RmgDEvent *dispatcher_event);
 
 /**
- * @brief Process service factory reset event master
+ * @brief Process service factory reset event for primary instance
  */
-static void do_process_factory_reset_event_master (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void do_process_factory_reset_event_primary (RmgExecutor *executor,
+                                                    RmgDEvent *dispatcher_event);
 
 /**
- * @brief Process service factory reset event slave
+ * @brief Process service factory reset event for replica instance
  */
-static void do_process_factory_reset_event_slave (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void do_process_factory_reset_event_replica (RmgExecutor *executor,
+                                                    RmgDEvent *dispatcher_event);
 
 /**
  * @brief Enter meditation state
  */
-static void enter_meditation (RmgExecutor *executor, RmgDEvent *dispatcher_event);
+static void enter_meditation (RmgExecutor *executor,
+                              RmgDEvent *dispatcher_event);
 
 /**
  * @brief GSourceFuncs vtable
  */
-static GSourceFuncs executor_source_funcs =
-{
+static GSourceFuncs executor_source_funcs = {
   executor_source_prepare,
   NULL,
   executor_source_dispatch,
@@ -151,9 +175,7 @@ static GSourceFuncs executor_source_funcs =
 };
 
 static void
-post_executor_event (RmgExecutor *executor,
-                     ExecutorEventType type,
-                     RmgDEvent *dispatcher_event)
+post_executor_event (RmgExecutor *executor, ExecutorEventType type, RmgDEvent *dispatcher_event)
 {
   RmgExecutorEvent *e = NULL;
 
@@ -169,8 +191,7 @@ post_executor_event (RmgExecutor *executor,
 }
 
 static gboolean
-executor_source_prepare (GSource *source,
-                         gint *timeout)
+executor_source_prepare (GSource *source, gint *timeout)
 {
   RmgExecutor *executor = (RmgExecutor *)source;
 
@@ -180,9 +201,7 @@ executor_source_prepare (GSource *source,
 }
 
 static gboolean
-executor_source_dispatch (GSource *source,
-                          GSourceFunc callback,
-                          gpointer _executor)
+executor_source_dispatch (GSource *source, GSourceFunc callback, gpointer _executor)
 {
   RmgExecutor *executor = (RmgExecutor *)source;
   gpointer event = g_async_queue_try_pop (executor->queue);
@@ -197,8 +216,7 @@ executor_source_dispatch (GSource *source,
 }
 
 static gboolean
-executor_source_callback (gpointer _executor,
-                          gpointer _event)
+executor_source_callback (gpointer _executor, gpointer _event)
 {
   RmgExecutor *executor = (RmgExecutor *)_executor;
   RmgExecutorEvent *event = (RmgExecutorEvent *)_event;
@@ -208,6 +226,14 @@ executor_source_callback (gpointer _executor,
 
   switch (event->type)
     {
+    case EXECUTOR_EVENT_FRIEND_PROCESS_CRASH:
+      do_process_friend_crash_event (executor, event->dispatcher_event, FRIEND_PROCESS);
+      break;
+
+    case EXECUTOR_EVENT_FRIEND_SERVICE_FAILED:
+      do_process_friend_crash_event (executor, event->dispatcher_event, FRIEND_SERVICE);
+      break;
+
     case EXECUTOR_EVENT_SERVICE_RESTART:
       do_process_service_restart_event (executor, event->dispatcher_event);
       break;
@@ -259,8 +285,72 @@ enter_meditation (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 }
 
 static void
-do_process_service_reset_public_data_event (RmgExecutor *executor,
-                                            RmgDEvent *dispatcher_event)
+foreach_service_friend (gpointer _friend, gpointer _executor)
+{
+  const RmgFriendResponseEntry *friend = (const RmgFriendResponseEntry *)_friend;
+
+  g_assert (friend);
+
+  rmg_friendtimer_trigger (friend->service_name,
+                           friend->action,
+                           friend->argument,
+                           _executor,
+                           (guint)friend->delay);
+
+  g_debug ("Friend timer started for service '%s' with action '%s'",
+           friend->service_name,
+           rmg_utils_friend_action_name (friend->action));
+}
+
+static void
+foreach_service_friend_remove (gpointer data)
+{
+  RmgFriendResponseEntry *entry = (RmgFriendResponseEntry *)data;
+
+  g_assert (entry);
+
+  g_free (entry->service_name);
+  g_free (entry);
+}
+
+static void
+do_process_friend_crash_event (RmgExecutor *executor,
+                               RmgDEvent *dispatcher_event,
+                               RmgFriendType friend_type)
+{
+  const gchar *target_name = NULL;
+
+  g_autoptr (GError) error = NULL;
+  GList *services = NULL;
+
+  g_assert (executor);
+  g_assert (dispatcher_event);
+
+  target_name = (friend_type == FRIEND_PROCESS) ? dispatcher_event->process_name
+                                                : dispatcher_event->service_name;
+
+  services = rmg_journal_get_services_for_friend (executor->journal,
+                                                  target_name,
+                                                  dispatcher_event->context_name,
+                                                  friend_type,
+                                                  &error);
+  if (error != NULL)
+    {
+      g_warning ("Fail to get services for friend %s. Error %s",
+                 dispatcher_event->process_name,
+                 error->message);
+      return;
+    }
+
+  if (services != NULL)
+    {
+      g_list_foreach (services, foreach_service_friend, executor);
+      g_list_free_full (services, foreach_service_friend_remove);
+    }
+}
+
+static void
+do_process_service_reset_public_data_event (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
   g_autoptr (GError) error = NULL;
   g_autofree gchar *reset_path = NULL;
@@ -287,7 +377,8 @@ do_process_service_reset_public_data_event (RmgExecutor *executor,
       return;
     }
 
-  reset_cmd = rmg_options_string_for (executor->options, KEY_PUBLIC_DATA_RESET_CMD);
+  reset_cmd =
+    rmg_options_string_for (executor->options, KEY_PUBLIC_DATA_RESET_CMD);
 
   path_tokens = g_strsplit (reset_cmd, "${path}", 3);
   reset_with_path_cmd = g_strjoinv (reset_path, path_tokens);
@@ -303,7 +394,11 @@ do_process_service_reset_public_data_event (RmgExecutor *executor,
 
   command_line = g_strdup_printf ("sh -c \"%s\"", reset_with_name_cmd);
 
-  g_spawn_command_line_sync (command_line, &standard_output, NULL, &exit_status, &error);
+  g_spawn_command_line_sync (command_line,
+                             &standard_output,
+                             NULL,
+                             &exit_status,
+                             &error);
   if (error != NULL)
     g_warning ("Fail to spawn process. Error %s", error->message);
   else
@@ -314,8 +409,7 @@ do_process_service_reset_public_data_event (RmgExecutor *executor,
 }
 
 static void
-do_process_service_reset_private_data_event (RmgExecutor *executor,
-                                             RmgDEvent *dispatcher_event)
+do_process_service_reset_private_data_event (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
   g_autoptr (GError) error = NULL;
   g_autofree gchar *reset_path = NULL;
@@ -358,7 +452,11 @@ do_process_service_reset_private_data_event (RmgExecutor *executor,
 
   command_line = g_strdup_printf ("sh -c \"%s\"", reset_with_name_cmd);
 
-  g_spawn_command_line_sync (command_line, &standard_output, NULL, &exit_status, &error);
+  g_spawn_command_line_sync (command_line,
+                             &standard_output,
+                             NULL,
+                             &exit_status,
+                             &error);
   if (error != NULL)
     g_warning ("Fail to spawn process. Error %s", error->message);
   else
@@ -369,33 +467,28 @@ do_process_service_reset_private_data_event (RmgExecutor *executor,
 }
 
 static void
-do_process_service_disable_event (RmgExecutor *executor,
-                                  RmgDEvent *dispatcher_event)
+do_process_service_disable_event (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
   RMG_UNUSED (executor);
-  g_info ("Service '%s' remain disable this lifecycle", dispatcher_event->service_name);
+  g_info ("Service '%s' remains disabled this lifecycle", dispatcher_event->service_name);
 }
 
 static void
-do_process_context_restart_event (RmgExecutor *executor,
-                                  RmgDEvent *dispatcher_event)
+do_process_context_restart_event (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
-  if (g_run_mode == RUN_MODE_MASTER)
+  if (g_run_mode == RUN_MODE_PRIMARY)
     {
       if (dispatcher_event->context_name == NULL)
-        do_process_platform_restart_event_master (executor, dispatcher_event);
+        do_process_platform_restart_event_primary (executor, dispatcher_event);
       else
-        do_process_context_restart_event_master (executor, dispatcher_event);
+        do_process_context_restart_event_primary (executor, dispatcher_event);
     }
   else
-    {
-      do_process_context_restart_event_slave (executor, dispatcher_event);
-    }
+    do_process_context_restart_event_replica (executor, dispatcher_event);
 }
 
 static void
-do_process_context_restart_event_master (RmgExecutor *executor,
-                                         RmgDEvent *dispatcher_event)
+do_process_context_restart_event_primary (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
   g_autofree gchar *service_name = NULL;
 
@@ -438,48 +531,27 @@ do_process_context_restart_event_master (RmgExecutor *executor,
 }
 
 static void
-do_process_context_restart_event_slave (RmgExecutor *executor,
-                                        RmgDEvent *dispatcher_event)
+do_process_context_restart_event_replica (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
-  RmgMessage msg;
-  RmgMessageRequestContextRestart data;
-  const gchar *hostname = g_get_host_name ();
+  g_autoptr (RmgMessage) msg = NULL;
 
   g_assert (executor);
   g_assert (dispatcher_event);
   g_assert (executor->manager);
 
-  memset (&data, 0, sizeof(RmgMessageRequestContextRestart));
+  msg = rmg_message_new (RMG_MESSAGE_REQUEST_CONTEXT_RESTART, 0);
 
-  if (!rmg_manager_connected (executor->manager))
-    {
-      if (rmg_manager_connect (executor->manager) != RMG_STATUS_OK)
-        {
-          g_warning ("Fail to connect to master instance");
-          return;
-        }
-    }
+  rmg_message_set_service_name (msg, dispatcher_event->service_name);
+  rmg_message_set_context_name (msg, g_get_host_name ());
 
-  rmg_message_init (&msg, RMG_REQUEST_CONTEXT_RESTART, 0);
-
-  memcpy (&data.service_name,
-          dispatcher_event->service_name,
-          strlen (dispatcher_event->service_name) + 1);
-  memcpy (&data.context_name,
-          hostname,
-          strlen (hostname) + 1);
-
-  rmg_message_set_data (&msg, &data, sizeof(data));
-
-  if (rmg_manager_send (executor->manager, &msg) != RMG_STATUS_OK)
-    g_warning ("Fail to send context restart event to master");
+  if (rmg_manager_send (executor->manager, msg) != RMG_STATUS_OK)
+    g_warning ("Fail to send context restart event to primary instance");
   else
     enter_meditation (executor, dispatcher_event);
 }
 
 static void
-do_process_platform_restart_event_master (RmgExecutor *executor,
-                                          RmgDEvent *dispatcher_event)
+do_process_platform_restart_event_primary (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
   g_autoptr (GError) error = NULL;
   g_autofree gchar *reset_cmd = NULL;
@@ -498,7 +570,11 @@ do_process_platform_restart_event_master (RmgExecutor *executor,
 
   command_line = g_strdup_printf ("sh -c \"%s\"", reset_cmd);
 
-  g_spawn_command_line_sync (command_line, &standard_output, NULL, &exit_status, &error);
+  g_spawn_command_line_sync (command_line,
+                             &standard_output,
+                             NULL,
+                             &exit_status,
+                             &error);
   if (error != NULL)
     g_warning ("Fail to spawn process. Error %s", error->message);
   else
@@ -506,58 +582,36 @@ do_process_platform_restart_event_master (RmgExecutor *executor,
 }
 
 static void
-do_process_platform_restart_event_slave (RmgExecutor *executor,
-                                         RmgDEvent *dispatcher_event)
+do_process_platform_restart_event_replica (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
-  RmgMessage msg;
-  RmgMessageRequestPlatformRestart data;
-  const gchar *hostname = g_get_host_name ();
+  g_autoptr (RmgMessage) msg = NULL;
 
   g_assert (executor);
   g_assert (dispatcher_event);
   g_assert (executor->manager);
 
-  memset (&data, 0, sizeof(RmgMessageRequestPlatformRestart));
+  msg = rmg_message_new (RMG_MESSAGE_REQUEST_PLATFORM_RESTART, 0);
 
-  if (!rmg_manager_connected (executor->manager))
-    {
-      if (rmg_manager_connect (executor->manager) != RMG_STATUS_OK)
-        {
-          g_warning ("Fail to connect to master instance");
-          return;
-        }
-    }
+  rmg_message_set_service_name (msg, dispatcher_event->service_name);
+  rmg_message_set_context_name (msg, g_get_host_name ());
 
-  rmg_message_init (&msg, RMG_REQUEST_PLATFORM_RESTART, 0);
-
-  memcpy (&data.service_name,
-          dispatcher_event->service_name,
-          strlen (dispatcher_event->service_name) + 1);
-  memcpy (&data.context_name,
-          hostname,
-          strlen (hostname) + 1);
-
-  rmg_message_set_data (&msg, &data, sizeof(data));
-
-  if (rmg_manager_send (executor->manager, &msg) != RMG_STATUS_OK)
-    g_warning ("Fail to send platform restart event to master");
+  if (rmg_manager_send (executor->manager, msg) != RMG_STATUS_OK)
+    g_warning ("Fail to send platform restart event to primary instance");
 }
 
 static void
-do_process_platform_restart_event (RmgExecutor *executor,
-                                   RmgDEvent *dispatcher_event)
+do_process_platform_restart_event (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
-  if (g_run_mode == RUN_MODE_MASTER)
-    do_process_platform_restart_event_master (executor, dispatcher_event);
+  if (g_run_mode == RUN_MODE_PRIMARY)
+    do_process_platform_restart_event_primary (executor, dispatcher_event);
   else
-    do_process_platform_restart_event_slave (executor, dispatcher_event);
+    do_process_platform_restart_event_replica (executor, dispatcher_event);
 
   enter_meditation (executor, dispatcher_event);
 }
 
 static void
-do_process_factory_reset_event_master (RmgExecutor *executor,
-                                       RmgDEvent *dispatcher_event)
+do_process_factory_reset_event_primary (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
   g_autoptr (GError) error = NULL;
   g_autofree gchar *reset_cmd = NULL;
@@ -584,58 +638,36 @@ do_process_factory_reset_event_master (RmgExecutor *executor,
 }
 
 static void
-do_process_factory_reset_event_slave (RmgExecutor *executor,
-                                      RmgDEvent *dispatcher_event)
+do_process_factory_reset_event_replica (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
-  RmgMessage msg;
-  RmgMessageRequestFactoryReset data;
-  const gchar *hostname = g_get_host_name ();
+  g_autoptr (RmgMessage) msg = NULL;
 
   g_assert (executor);
   g_assert (dispatcher_event);
   g_assert (executor->manager);
 
-  memset (&data, 0, sizeof(RmgMessageRequestFactoryReset));
+  msg = rmg_message_new (RMG_MESSAGE_REQUEST_FACTORY_RESET, 0);
 
-  if (!rmg_manager_connected (executor->manager))
-    {
-      if (rmg_manager_connect (executor->manager) != RMG_STATUS_OK)
-        {
-          g_warning ("Fail to connect to master instance");
-          return;
-        }
-    }
+  rmg_message_set_service_name (msg, dispatcher_event->service_name);
+  rmg_message_set_context_name (msg, g_get_host_name ());
 
-  rmg_message_init (&msg, RMG_REQUEST_FACTORY_RESET, 0);
-
-  memcpy (&data.service_name,
-          dispatcher_event->service_name,
-          strlen (dispatcher_event->service_name) + 1);
-  memcpy (&data.context_name,
-          hostname,
-          strlen (hostname) + 1);
-
-  rmg_message_set_data (&msg, &data, sizeof(data));
-
-  if (rmg_manager_send (executor->manager, &msg) != RMG_STATUS_OK)
-    g_warning ("Fail to send factory reset event to master");
+  if (rmg_manager_send (executor->manager, msg) != RMG_STATUS_OK)
+    g_warning ("Fail to send factory reset event to primary instance");
 }
 
 static void
-do_process_factory_reset_event (RmgExecutor *executor,
-                                RmgDEvent *dispatcher_event)
+do_process_factory_reset_event (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
-  if (g_run_mode == RUN_MODE_MASTER)
-    do_process_factory_reset_event_master (executor, dispatcher_event);
+  if (g_run_mode == RUN_MODE_PRIMARY)
+    do_process_factory_reset_event_primary (executor, dispatcher_event);
   else
-    do_process_factory_reset_event_slave (executor, dispatcher_event);
+    do_process_factory_reset_event_replica (executor, dispatcher_event);
 
   enter_meditation (executor, dispatcher_event);
 }
 
 static void
-do_process_service_restart_event (RmgExecutor *executor,
-                                  RmgDEvent *dispatcher_event)
+do_process_service_restart_event (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
   g_autoptr (GError) error = NULL;
   g_autoptr (GVariant) response;
@@ -653,16 +685,10 @@ do_process_service_restart_event (RmgExecutor *executor,
                                      NULL,
                                      &error);
 
-
   if (error != NULL)
-    {
-      g_warning ("Fail to call RestartUnit on Manager proxy. Error %s",
-                 error->message);
-    }
+    g_warning ("Fail to call RestartUnit on Manager proxy. Error %s", error->message);
   else
-    {
-      g_info ("Request service restart for unit='%s'", dispatcher_event->service_name);
-    }
+    g_info ("Request service restart for unit='%s'", dispatcher_event->service_name);
 }
 
 static void
@@ -691,14 +717,9 @@ rmg_executor_new (RmgOptions *options, RmgJournal *journal)
   g_assert (executor);
 
   g_ref_count_init (&executor->rc);
-
   executor->callback = executor_source_callback;
   executor->options = rmg_options_ref (options);
   executor->journal = rmg_journal_ref (journal);
-
-  if (g_run_mode == RUN_MODE_SLAVE)
-    executor->manager = rmg_manager_new (options);
-
   executor->queue = g_async_queue_new_full (executor_queue_destroy_notify);
 
   g_source_set_callback (RMG_EVENT_SOURCE (executor),
@@ -734,15 +755,46 @@ rmg_executor_unref (RmgExecutor *executor)
       if (executor->manager != NULL)
         rmg_manager_unref (executor->manager);
 
+      if (executor->server != NULL)
+        rmg_server_unref (executor->server);
+
+      if (executor->sd_manager_proxy != NULL)
+        g_object_unref (executor->sd_manager_proxy);
+
       g_async_queue_unref (executor->queue);
       g_source_unref (RMG_EVENT_SOURCE (executor));
     }
 }
 
 void
-rmg_executor_push_event (RmgExecutor *executor,
-                         ExecutorEventType type,
-                         RmgDEvent *dispatcher_event)
+rmg_executor_set_replica_manager (RmgExecutor *executor, RmgManager *manager)
+{
+  g_assert (executor);
+  g_assert (manager);
+  executor->manager = rmg_manager_ref (manager);
+}
+
+void
+rmg_executor_set_primary_server (RmgExecutor *executor, RmgServer *server)
+{
+  g_assert (executor);
+  g_assert (server);
+  executor->server = rmg_server_ref (server);
+}
+
+void
+rmg_executor_push_event (RmgExecutor *executor, ExecutorEventType type, RmgDEvent *dispatcher_event)
 {
   post_executor_event (executor, type, dispatcher_event);
+}
+
+void
+rmg_executor_set_proxy (RmgExecutor *executor, GDBusProxy *dbus_proxy)
+{
+  g_assert (executor);
+  g_assert (dbus_proxy);
+  g_assert (!executor->sd_manager_proxy);
+
+  g_debug ("Proxy available for executor");
+  executor->sd_manager_proxy = g_object_ref (dbus_proxy);
 }
