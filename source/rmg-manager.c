@@ -263,7 +263,7 @@ rmg_manager_connect (RmgManager *manager)
     }
 
   opt_sock_addr = rmg_options_string_for (manager->opts, KEY_IPC_SOCK_ADDR);
-  opt_timeout = rmg_options_long_for (manager->opts, KEY_IPC_TIMEOUT_SEC);
+  opt_timeout = (glong)rmg_options_long_for (manager->opts, KEY_IPC_TIMEOUT_SEC);
 
   memset (&manager->saddr, 0, sizeof(struct sockaddr_un));
   manager->saddr.sun_family = AF_UNIX;

@@ -163,7 +163,7 @@ rmg_server_new (RmgOptions *options, gpointer dispatcher, GError **error)
     }
   else
     {
-      timeout = rmg_options_long_for (options, KEY_IPC_TIMEOUT_SEC);
+      timeout = (glong)rmg_options_long_for (options, KEY_IPC_TIMEOUT_SEC);
 
       tout.tv_sec = timeout;
       tout.tv_usec = 0;

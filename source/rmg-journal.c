@@ -126,7 +126,7 @@ sqlite_callback (void *data, int argc, char **argv, char **colname)
       for (gint i = 0; i < argc; i++)
         {
           if (g_strcmp0 (colname[i], "HASH") == 0)
-            *((gulong *)(querydata->response)) = g_ascii_strtoull (argv[i], NULL, 10);
+            *((gulong *)(querydata->response)) = (gulong)g_ascii_strtoull (argv[i], NULL, 10);
         }
       break;
 
@@ -162,7 +162,7 @@ sqlite_callback (void *data, int argc, char **argv, char **colname)
       for (gint i = 0; i < argc; i++)
         {
           if (g_strcmp0 (colname[i], "TIMEOUT") == 0)
-            *((glong *)(querydata->response)) = g_ascii_strtoll (argv[i], NULL, 10);
+            *((glong *)(querydata->response)) = (glong)g_ascii_strtoll (argv[i], NULL, 10);
         }
       break;
 
@@ -178,7 +178,7 @@ sqlite_callback (void *data, int argc, char **argv, char **colname)
       for (gint i = 0; i < argc; i++)
         {
           if (g_strcmp0 (colname[i], "RVECTOR") == 0)
-            *((glong *)(querydata->response)) = g_ascii_strtoll (argv[i], NULL, 10);
+            *((glong *)(querydata->response)) = (glong)g_ascii_strtoll (argv[i], NULL, 10);
         }
       break;
 
@@ -216,9 +216,9 @@ sqlite_callback (void *data, int argc, char **argv, char **colname)
           else if (g_strcmp0 (colname[i], "ACTION") == 0)
             friend_response->action = (RmgFriendActionType)g_ascii_strtoll (argv[i], NULL, 10);
           else if (g_strcmp0 (colname[i], "ARGUMENT") == 0)
-            friend_response->argument = g_ascii_strtoll (argv[i], NULL, 10);
+            friend_response->argument = (glong)g_ascii_strtoll (argv[i], NULL, 10);
           else if (g_strcmp0 (colname[i], "DELAY") == 0)
-            friend_response->delay = g_ascii_strtoll (argv[i], NULL, 10);
+            friend_response->delay = (glong)g_ascii_strtoll (argv[i], NULL, 10);
         }
 
       *services = g_list_append (*services, friend_response);
@@ -399,7 +399,7 @@ parser_start_element (GMarkupParseContext *context,
           else if (g_strcmp0 (attribute_names[i], "retry") == 0)
             {
               if (attribute_values[i] != NULL)
-                retry = g_ascii_strtoll (attribute_values[i], NULL, 10);
+                retry = (glong)g_ascii_strtoll (attribute_values[i], NULL, 10);
             }
           else if (g_strcmp0 (attribute_names[i], "reset") == 0)
             {
@@ -443,12 +443,12 @@ parser_start_element (GMarkupParseContext *context,
           else if (g_strcmp0 (attribute_names[i], "delay") == 0)
             {
               if (attribute_values[i] != NULL)
-                friend->delay = g_ascii_strtoll (attribute_values[i], NULL, 10);
+                friend->delay = (glong)g_ascii_strtoll (attribute_values[i], NULL, 10);
             }
           else if (g_strcmp0 (attribute_names[i], "arg") == 0)
             {
               if (attribute_values[i] != NULL)
-                friend->argument = g_ascii_strtoll (attribute_values[i], NULL, 10);
+                friend->argument = (glong)g_ascii_strtoll (attribute_values[i], NULL, 10);
             }
           else if (g_strcmp0 (attribute_names[i], "context") == 0)
             {
@@ -463,7 +463,7 @@ parser_start_element (GMarkupParseContext *context,
         {
           if (g_strcmp0 (attribute_names[i], "relaxtime") == 0)
             {
-              glong relaxtime = g_ascii_strtoll (attribute_values[i], NULL, 10);
+              glong relaxtime = (glong)g_ascii_strtoll (attribute_values[i], NULL, 10);
               rmg_jentry_set_timeout (entry, (relaxtime > 0 ? relaxtime : 5));
             }
           else if (g_strcmp0 (attribute_names[i], "checkstart") == 0)
@@ -607,7 +607,7 @@ rmg_journal_reload_units (RmgJournal *journal, GError **error)
           continue;
         }
 
-      hash = rmg_utils_jenkins_hash (fdata);
+      hash = (gulong)rmg_utils_jenkins_hash (fdata);
       jentry = rmg_jentry_new (hash);
       parser_context = g_markup_parse_context_new (&markup_parser, 0, jentry, NULL);
 
@@ -620,7 +620,7 @@ rmg_journal_reload_units (RmgJournal *journal, GError **error)
         }
       else
         {
-          gulong exist_hash = rmg_journal_get_hash (journal, jentry->name, NULL);
+          gulong exist_hash = (gulong)rmg_journal_get_hash (journal, jentry->name, NULL);
 
           if (hash == exist_hash)
             {

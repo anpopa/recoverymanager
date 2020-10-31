@@ -198,7 +198,7 @@ checker_start_check_services_timer (RmgChecker *checker)
 
   g_assert (checker);
 
-  timeout = rmg_options_long_for (checker->options, KEY_INTEGRITY_CHECK_SEC);
+  timeout = (glong)rmg_options_long_for (checker->options, KEY_INTEGRITY_CHECK_SEC);
   g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
                               (guint)timeout,
                               check_services_timer_callback,

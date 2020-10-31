@@ -26,7 +26,7 @@
 #include <sys/timerfd.h>
 #include <systemd/sd-daemon.h>
 
-#define USEC2SEC(x) (x / 1000000)
+#define USEC2SEC(x) (guint)(x / 1000000)
 #define USEC2SECHALF(x) (guint)(x / 1000000 / 2)
 
 /**
@@ -73,7 +73,7 @@ rmg_sdnotify_new (void)
 {
   RmgSDNotify *sdnotify = g_new0 (RmgSDNotify, 1);
   gint sdw_status;
-  gulong usec = 0;
+  guint64 usec = 0;
 
   g_assert (sdnotify);
 
@@ -83,7 +83,7 @@ rmg_sdnotify_new (void)
 
   if (sdw_status > 0)
     {
-      g_info ("Systemd watchdog enabled with timeout %lu seconds", USEC2SEC (usec));
+      g_info ("Systemd watchdog enabled with timeout %u seconds", USEC2SEC (usec));
 
       sdnotify->source = g_timeout_source_new_seconds (USEC2SECHALF (usec));
       g_source_ref (sdnotify->source);
