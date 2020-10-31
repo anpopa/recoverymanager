@@ -83,7 +83,7 @@ RmgStatus               rmg_journal_reload_units            (RmgJournal *journal
  * @param error The GError object or NULL
  * @return If found return the current version in DB and 0 if not found
  */
-gulong                  rmg_journal_get_hash                (RmgJournal *journal,
+guint64                 rmg_journal_get_hash                (RmgJournal *journal,
                                                              const gchar *service_name,
                                                              GError **error);
 
@@ -99,7 +99,7 @@ gulong                  rmg_journal_get_hash                (RmgJournal *journal
  * @return On success return RMG_STATUS_OK
  */
 RmgStatus               rmg_journal_add_service             (RmgJournal *journal,
-                                                             gulong hash,
+                                                             guint64 hash,
                                                              const gchar *service_name,
                                                              const gchar *private_data,
                                                              const gchar *public_data,
@@ -186,7 +186,7 @@ gchar *                 rmg_journal_get_public_data_path    (RmgJournal *journal
  * @param error The GError object or NULL
  * @return Timeout value
  */
-glong                   rmg_journal_get_relaxing_timeout    (RmgJournal *journal,
+gint64                  rmg_journal_get_relaxing_timeout    (RmgJournal *journal,
                                                              const gchar *service_name,
                                                              GError **error);
 /**
@@ -214,7 +214,7 @@ void                    rmg_journal_call_foreach_checkstart (RmgJournal *journal
  * @param error The GError object or NULL
  * @return Gradiant value
  */
-glong                   rmg_journal_get_rvector             (RmgJournal *journal,
+gint64                  rmg_journal_get_rvector             (RmgJournal *journal,
                                                              const gchar *service_name,
                                                              GError **error);
 
@@ -227,7 +227,7 @@ glong                   rmg_journal_get_rvector             (RmgJournal *journal
  */
 RmgStatus               rmg_journal_set_rvector             (RmgJournal *journal,
                                                              const gchar *service_name,
-                                                             glong rvector,
+                                                             gint64 rvector,
                                                              GError **error);
 /**
  * @brief Get current action for service

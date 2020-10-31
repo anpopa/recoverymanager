@@ -140,7 +140,7 @@ rmg_server_new (RmgOptions *options, gpointer dispatcher, GError **error)
 {
   RmgServer *server = NULL;
   struct timeval tout;
-  glong timeout;
+  gint64 timeout;
 
   g_assert (options);
 
@@ -165,7 +165,7 @@ rmg_server_new (RmgOptions *options, gpointer dispatcher, GError **error)
     {
       timeout = rmg_options_long_for (options, KEY_IPC_TIMEOUT_SEC);
 
-      tout.tv_sec = timeout;
+      tout.tv_sec = (glong)timeout;
       tout.tv_usec = 0;
 
       if (setsockopt (server->sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tout, sizeof(tout)) == -1)

@@ -281,8 +281,8 @@ do_process_service_crash_event (RmgDispatcher *dispatcher, RmgDEvent *event)
   gboolean action_reset_after = false;
 
   g_autoptr (GError) error = NULL;
-  gulong service_hash = 0;
-  glong rvector = 0;
+  guint64 service_hash = 0;
+  gint64 rvector = 0;
 
   g_assert (dispatcher);
   g_assert (event);
@@ -347,10 +347,10 @@ do_process_service_crash_event (RmgDispatcher *dispatcher, RmgDEvent *event)
 
   if (action_type != ACTION_INVALID)
     {
-      g_info ("Action '%s' requiered for service='%s' rvector=%ld",
+      g_info ("Action '%s' requiered for service='%s' rvector=%lld",
               rmg_utils_action_name (action_type),
               event->service_name,
-              rvector);
+              (long long int)rvector);
     }
 
   switch (action_type)

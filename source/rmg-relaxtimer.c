@@ -29,7 +29,7 @@ relaxtimer_callback (gpointer user_data)
   RmgRelaxTimer *relaxtimer = (RmgRelaxTimer *)user_data;
 
   g_autoptr (GError) error = NULL;
-  glong current_rvector = 0;
+  gint64 current_rvector = 0;
 
   g_assert (relaxtimer);
 

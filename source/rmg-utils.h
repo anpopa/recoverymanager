@@ -34,14 +34,14 @@ G_BEGIN_DECLS
  * @param pid Process ID to lookup for
  * @return new allocated string with proc name or NULL if not found
  */
-gchar *                 rmg_utils_get_procname              (gint64 pid);
+gchar *                 rmg_utils_get_procname              (pid_t pid);
 
 /**
  * @brief Get process exe path for pid
  * @param pid Process ID to lookup for
  * @return new allocated string with proc exe or NULL if not found
  */
-gchar *                 rmg_utils_get_procexe               (gint64 pid);
+gchar *                 rmg_utils_get_procexe               (pid_t pid);
 
 /**
  * @brief Get process name for pid
