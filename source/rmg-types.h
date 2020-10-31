@@ -88,8 +88,8 @@ typedef enum _RmgFriendActionType {
 typedef struct _RmgFriendResponseEntry {
   gchar *service_name;
   RmgFriendActionType action;
-  gint64 argument;
-  gint64 delay;
+  glong argument;
+  glong delay;
 } RmgFriendResponseEntry;
 
 /* Preserve the size and order from RmgActionType */

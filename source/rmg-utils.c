@@ -127,7 +127,7 @@ rmg_utils_friend_action_name (RmgFriendActionType type)
 }
 
 gchar *
-rmg_utils_get_procname (pid_t pid)
+rmg_utils_get_procname (gint64 pid)
 {
   g_autofree gchar *statfile = NULL;
   gboolean done = FALSE;
@@ -135,7 +135,7 @@ rmg_utils_get_procname (pid_t pid)
   gchar tmpbuf[TMP_BUFFER_SIZE];
   FILE *fstm;
 
-  statfile = g_strdup_printf ("/proc/%d/status", pid);
+  statfile = g_strdup_printf ("/proc/%ld/status", pid);
 
   if ((fstm = fopen (statfile, "r")) == NULL)
     {
@@ -163,12 +163,12 @@ rmg_utils_get_procname (pid_t pid)
 }
 
 gchar *
-rmg_utils_get_procexe (pid_t pid)
+rmg_utils_get_procexe (gint64 pid)
 {
   g_autofree gchar *exefile = NULL;
   gchar *lnexe = NULL;
 
-  exefile = g_strdup_printf ("/proc/%d/exe", pid);
+  exefile = g_strdup_printf ("/proc/%ld/exe", pid);
   lnexe = g_file_read_link (exefile, NULL);
 
   return lnexe;
@@ -302,7 +302,7 @@ rmg_utils_first_pid_for_process (const gchar *exepath)
     {
       g_autofree gchar *fpath = NULL;
       g_autofree gchar *lnexe = NULL;
-      gint64 pent = 0;
+      glong pent = 0;
 
       pent = g_ascii_strtoll (nfile, NULL, 10);
       if (pent == 0)

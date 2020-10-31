@@ -73,7 +73,7 @@ typedef struct _RmgFEntryParserHelper {
  * @brief The RmgJEntry opaque data structure
  */
 typedef struct _RmgJEntry {
-  guint64 hash;
+  gulong hash;
   gchar *name;
   gchar *private_data;
   gchar *public_data;
@@ -99,7 +99,7 @@ typedef struct _RmgJEntry {
  * @brief Create a new jentry object
  * @return On success return a new RmgJEntry object otherwise return NULL
  */
-RmgJEntry *             rmg_jentry_new                      (guint64 version);
+RmgJEntry *             rmg_jentry_new                      (gulong version);
 
 /**
  * @brief Aquire jentry object

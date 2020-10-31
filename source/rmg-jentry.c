@@ -43,7 +43,7 @@ friend_entry_free (gpointer _entry)
 }
 
 RmgJEntry *
-rmg_jentry_new (guint64 version)
+rmg_jentry_new (gulong version)
 {
   RmgJEntry *jentry = g_new0 (RmgJEntry, 1);
 

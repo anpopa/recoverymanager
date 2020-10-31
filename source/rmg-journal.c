@@ -126,7 +126,7 @@ sqlite_callback (void *data, int argc, char **argv, char **colname)
       for (gint i = 0; i < argc; i++)
         {
           if (g_strcmp0 (colname[i], "HASH") == 0)
-            *((guint64 *)(querydata->response)) = g_ascii_strtoull (argv[i], NULL, 10);
+            *((gulong *)(querydata->response)) = g_ascii_strtoull (argv[i], NULL, 10);
         }
       break;
 
@@ -162,7 +162,7 @@ sqlite_callback (void *data, int argc, char **argv, char **colname)
       for (gint i = 0; i < argc; i++)
         {
           if (g_strcmp0 (colname[i], "TIMEOUT") == 0)
-            *((gint64 *)(querydata->response)) = g_ascii_strtoll (argv[i], NULL, 10);
+            *((glong *)(querydata->response)) = g_ascii_strtoll (argv[i], NULL, 10);
         }
       break;
 
@@ -178,7 +178,7 @@ sqlite_callback (void *data, int argc, char **argv, char **colname)
       for (gint i = 0; i < argc; i++)
         {
           if (g_strcmp0 (colname[i], "RVECTOR") == 0)
-            *((gint64 *)(querydata->response)) = g_ascii_strtoll (argv[i], NULL, 10);
+            *((glong *)(querydata->response)) = g_ascii_strtoll (argv[i], NULL, 10);
         }
       break;
 
@@ -387,7 +387,7 @@ parser_start_element (GMarkupParseContext *context,
     {
       RmgActionType action_type = ACTION_INVALID;
       gboolean reset_after = FALSE;
-      gint64 retry = 1;
+      glong retry = 1;
 
       for (gint i = 0; attribute_names[i] != NULL; i++)
         {
@@ -412,7 +412,7 @@ parser_start_element (GMarkupParseContext *context,
         g_warning ("Invalid action settings");
       else
         {
-          gint64 g = rmg_jentry_get_rvector (entry) + retry;
+          glong g = rmg_jentry_get_rvector (entry) + retry;
 
           rmg_jentry_add_action (entry,
                                  action_type,
@@ -443,12 +443,12 @@ parser_start_element (GMarkupParseContext *context,
           else if (g_strcmp0 (attribute_names[i], "delay") == 0)
             {
               if (attribute_values[i] != NULL)
-                friend->delay = (glong)g_ascii_strtoll (attribute_values[i], NULL, 10);
+                friend->delay = g_ascii_strtoll (attribute_values[i], NULL, 10);
             }
           else if (g_strcmp0 (attribute_names[i], "arg") == 0)
             {
               if (attribute_values[i] != NULL)
-                friend->argument = (glong)g_ascii_strtoll (attribute_values[i], NULL, 10);
+                friend->argument = g_ascii_strtoll (attribute_values[i], NULL, 10);
             }
           else if (g_strcmp0 (attribute_names[i], "context") == 0)
             {
@@ -463,7 +463,7 @@ parser_start_element (GMarkupParseContext *context,
         {
           if (g_strcmp0 (attribute_names[i], "relaxtime") == 0)
             {
-              glong relaxtime = (glong)g_ascii_strtoll (attribute_values[i], NULL, 10);
+              glong relaxtime = g_ascii_strtoll (attribute_values[i], NULL, 10);
               rmg_jentry_set_timeout (entry, (relaxtime > 0 ? relaxtime : 5));
             }
           else if (g_strcmp0 (attribute_names[i], "checkstart") == 0)
@@ -598,7 +598,7 @@ rmg_journal_reload_units (RmgJournal *journal, GError **error)
       g_autoptr (GError) element_error = NULL;
       g_autofree gchar *fpath = NULL;
       g_autofree gchar *fdata = NULL;
-      guint64 hash;
+      gulong hash;
 
       fpath = g_build_filename (opt_unitsdir, nfile, NULL);
       if (!g_file_get_contents (fpath, &fdata, NULL, NULL))
@@ -620,7 +620,7 @@ rmg_journal_reload_units (RmgJournal *journal, GError **error)
         }
       else
         {
-          guint64 exist_hash = rmg_journal_get_hash (journal, jentry->name, NULL);
+          gulong exist_hash = rmg_journal_get_hash (journal, jentry->name, NULL);
 
           if (hash == exist_hash)
             {
@@ -668,7 +668,7 @@ rmg_journal_reload_units (RmgJournal *journal, GError **error)
 
 RmgStatus
 rmg_journal_add_service (RmgJournal *journal,
-                         guint64 hash,
+                         gulong hash,
                          const gchar *service_name,
                          const gchar *private_data,
                          const gchar *public_data,
@@ -691,9 +691,9 @@ rmg_journal_add_service (RmgJournal *journal,
 
   sql = g_strdup_printf ("INSERT INTO %s                                 "
                          "(HASH,NAME,PRIVDATA,PUBLDATA,RVECTOR,CHKSTART,TIMEOUT)  "
-                         "VALUES(%llu, '%s', '%s', '%s', %ld, %ld, %ld);       ",
+                         "VALUES(%ld, '%s', '%s', '%s', %ld, %ld, %ld);       ",
                          rmg_table_services,
-                         (long long unsigned int)hash,
+                         (glong)hash,
                          service_name,
                          private_data,
                          public_data,
@@ -905,12 +905,12 @@ rmg_journal_get_checkstart (RmgJournal *journal, const gchar *service_name, GErr
   return check_start;
 }
 
-gint64
+glong
 rmg_journal_get_relaxing_timeout (RmgJournal *journal, const gchar *service_name, GError **error)
 {
   g_autofree gchar *sql = NULL;
   gchar *query_error = NULL;
-  gint64 timeout = 0;
+  glong timeout = 0;
 
   JournalQueryData data = { .type = QUERY_GET_TIMEOUT,
                             .journal = journal,
@@ -994,12 +994,12 @@ rmg_journal_call_foreach_checkstart (RmgJournal *journal,
     }
 }
 
-gint64
+glong
 rmg_journal_get_rvector (RmgJournal *journal, const gchar *service_name, GError **error)
 {
   g_autofree gchar *sql = NULL;
   gchar *query_error = NULL;
-  gint64 rvector = 0;
+  glong rvector = 0;
 
   JournalQueryData data = { .type = QUERY_GET_RVECTOR,
                             .journal = journal,
@@ -1031,7 +1031,7 @@ rmg_journal_get_rvector (RmgJournal *journal, const gchar *service_name, GError 
 RmgStatus
 rmg_journal_set_rvector (RmgJournal *journal,
                          const gchar *service_name,
-                         gint64 rvector,
+                         glong rvector,
                          GError **error)
 {
   g_autofree gchar *sql = NULL;
@@ -1046,9 +1046,9 @@ rmg_journal_set_rvector (RmgJournal *journal,
   g_assert (journal);
   g_assert (service_name);
 
-  sql = g_strdup_printf ("UPDATE %s SET RVECTOR = %lld WHERE NAME IS '%s'",
+  sql = g_strdup_printf ("UPDATE %s SET RVECTOR = %ld WHERE NAME IS '%s'",
                          rmg_table_services,
-                         (long long int)rvector,
+                         rvector,
                          service_name);
 
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error) != SQLITE_OK)
@@ -1071,7 +1071,7 @@ rmg_journal_get_service_action (RmgJournal *journal, const gchar *service_name, 
   g_autofree gchar *sql = NULL;
   gchar *query_error = NULL;
   RmgActionType action_type = ACTION_INVALID;
-  gint64 rvector = 0;
+  glong rvector = 0;
 
   JournalQueryData data = { .type = QUERY_GET_ACTION,
                             .journal = journal,
@@ -1085,10 +1085,10 @@ rmg_journal_get_service_action (RmgJournal *journal, const gchar *service_name, 
   data.response = (gpointer) & action_type;
 
   sql = g_strdup_printf ("SELECT TYPE FROM %s WHERE SERVICE IS '%s' "
-                         "AND %lld BETWEEN TLMIN AND TLMAX",
+                         "AND %ld BETWEEN TLMIN AND TLMAX",
                          rmg_table_actions,
                          service_name,
-                         (long long int)rvector);
+                         rvector);
 
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error) != SQLITE_OK)
     {
@@ -1111,7 +1111,7 @@ rmg_journal_get_service_action_reset_after (RmgJournal *journal,
   g_autofree gchar *sql = NULL;
   gchar *query_error = NULL;
   gboolean reset_after = FALSE;
-  gint64 rvector = 0;
+  glong rvector = 0;
 
   JournalQueryData data = { .type = QUERY_GET_ACTION_RESET_AFTER,
                             .journal = journal,
@@ -1125,10 +1125,10 @@ rmg_journal_get_service_action_reset_after (RmgJournal *journal,
   data.response = (gpointer) & reset_after;
 
   sql = g_strdup_printf ("SELECT RESET FROM %s WHERE SERVICE IS '%s' "
-                         "AND %lld BETWEEN TLMIN AND TLMAX",
+                         "AND %ld BETWEEN TLMIN AND TLMAX",
                          rmg_table_actions,
                          service_name,
-                         (long long int)rvector);
+                         rvector);
 
   if (sqlite3_exec (journal->database, sql, sqlite_callback, &data, &query_error) != SQLITE_OK)
     {
@@ -1259,12 +1259,12 @@ rmg_journal_remove_service (RmgJournal *journal, const gchar *service_name, GErr
   return status;
 }
 
-guint64
+gulong
 rmg_journal_get_hash (RmgJournal *journal, const gchar *service_name, GError **error)
 {
   g_autofree gchar *sql = NULL;
   gchar *query_error = NULL;
-  guint64 hash = 0;
+  gulong hash = 0;
 
   JournalQueryData data = { .type = QUERY_GET_HASH,
                             .journal = journal,

@@ -37,8 +37,8 @@ G_BEGIN_DECLS
 typedef struct _RmgRelaxTimer {
   RmgJournal *journal;
   gchar *service_name;
-  gint64 rvector;
-  gint64 timeout;
+  glong rvector;
+  glong timeout;
   grefcount rc;
 } RmgRelaxTimer;
 
