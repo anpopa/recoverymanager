@@ -1,0 +1,41 @@
+pkgname=recoverymanager
+pkgver=r32.562b53c
+pkgrel=1
+epoch=
+pkgdesc="Linux recovery manager"
+arch=(x86_64)
+url="https://www.fxdata.ro/recoverymanager"
+license=('GPL')
+groups=()
+depends=('libssh2>=1.9', 'sqlite>=3.0', 'glib2>=2.58', 'libsystemd')
+makedepends=('meson>=0.52', 'git')
+checkdepends=()
+optdepends=('crashmanager')
+provides=("${pkgname%}")
+conflicts=("${pkgname%}")
+replaces=()
+backup=()
+options=()
+install=
+changelog=
+source=("recoverymanager::git+https://gitlab.com/anpopa/recoverymanager.git#branch=master")
+noextract=()
+md5sums=(SKIP)
+validpgpkeys=()
+
+pkgver() {
+  cd "$pkgname"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+    cd "$pkgname"
+    meson setup build    
+    cd build   
+    ninja     
+}
+
+package() {
+	cd "$pkgname"/build
+	DESTDIR="$pkgdir/" ninja install
+}

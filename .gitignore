@@ -1,3 +1,14 @@
 build/
 configure/
 *.swp
+
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/recoverymanager-dbg.debhelper.log
+debian/recoverymanager-dbg.substvars
+debian/recoverymanager-dbg/
+debian/recoverymanager.debhelper.log
+debian/recoverymanager.substvars
+debian/recoverymanager/
+debian/tmp/

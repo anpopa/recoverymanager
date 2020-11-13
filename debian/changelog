@@ -1,0 +1,5 @@
+recoverymanager (1.0.1) master; urgency=medium
+
+  * recoverymanager: Initial debian package
+
+ -- Alin Popa <alin.popa@fxdata.ro>  Fri, 13 Nov 2020 12:44:58 +0100
