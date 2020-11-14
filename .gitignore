@@ -12,3 +12,6 @@ debian/recoverymanager.debhelper.log
 debian/recoverymanager.substvars
 debian/recoverymanager/
 debian/tmp/
+
+rpm/.build*
+rpm/recoverymanager-*

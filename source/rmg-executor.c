@@ -670,7 +670,7 @@ static void
 do_process_service_restart_event (RmgExecutor *executor, RmgDEvent *dispatcher_event)
 {
   g_autoptr (GError) error = NULL;
-  g_autoptr (GVariant) response;
+  g_autoptr (GVariant) response = NULL;
 
   g_assert (executor);
   g_assert (dispatcher_event);

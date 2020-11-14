@@ -20,13 +20,6 @@ Requires: glib2 >= 2.60
 %description
 %{summary}
 
-%package devel
-Summary:        Development tools for %{name}
-Requires:       %{name}%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
-
-%description devel
-%{summary}.
-
 %global _vpath_srcdir %{name}-master
 
 %prep
