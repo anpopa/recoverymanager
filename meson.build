@@ -129,3 +129,5 @@ executable('recoverymanager',
   c_args: rmg_c_compiler_args,
   install: true,
   )
+
+install_data(sources: 'LICENSE', install_dir: '/usr/share/licenses/recoverymanager')
