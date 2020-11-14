@@ -15,3 +15,4 @@ debian/tmp/
 
 rpm/.build*
 rpm/recoverymanager-*
+rpm/x86_64*
