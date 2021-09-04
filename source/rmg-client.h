@@ -40,13 +40,13 @@ G_BEGIN_DECLS
  * @brief The RmgClient data structure
  */
 typedef struct _RmgClient {
-  GSource source;             /**< Event loop source */
-  gpointer tag;               /**< Unix server socket tag  */
-  grefcount rc;               /**< Reference counter variable  */
-  gint sockfd;                /**< Module file descriptor (client fd) */
-  gchar *context_name;        /**< Client context name */
-  gpointer dispatcher;        /**< Optional reference to dispatcher */
-  gpointer server;            /**< Optional reference to server */
+    GSource source;      /**< Event loop source */
+    gpointer tag;        /**< Unix server socket tag  */
+    grefcount rc;        /**< Reference counter variable  */
+    gint sockfd;         /**< Module file descriptor (client fd) */
+    gchar *context_name; /**< Client context name */
+    gpointer dispatcher; /**< Optional reference to dispatcher */
+    gpointer server;     /**< Optional reference to server */
 } RmgClient;
 
 /*
@@ -56,29 +56,27 @@ typedef struct _RmgClient {
  * application
  * @return On success return a new RmgClient object otherwise return NULL
  */
-RmgClient *             rmg_client_new                      (gint clientfd, 
-                                                             gpointer dispatcher);
+RmgClient *rmg_client_new(gint clientfd, gpointer dispatcher);
 
 /**
  * @brief Aquire client object
  * @param client Pointer to the client object
  * @return The referenced client object
  */
-RmgClient *             rmg_client_ref                      (RmgClient *client);
+RmgClient *rmg_client_ref(RmgClient *client);
 
 /**
  * @brief Release client object
  * @param client Pointer to the client object
  */
-void                    rmg_client_unref                    (RmgClient *client);
+void rmg_client_unref(RmgClient *client);
 
 /**
  * @brief Set server reference
  * @param server Pointer to the server object
  * @return The referenced client object
  */
-void                    rmg_client_set_server_ref           (RmgClient *client, 
-                                                             gpointer server);
+void rmg_client_set_server_ref(RmgClient *client, gpointer server);
 
 /**
  * @brief Send message to client
@@ -86,9 +84,8 @@ void                    rmg_client_set_server_ref           (RmgClient *client,
  * @param msg Message to send
  * @return True if connected
  */
-RmgStatus               rmg_client_send                     (RmgClient *client, 
-                                                             RmgMessage *msg);
+RmgStatus rmg_client_send(RmgClient *client, RmgMessage *msg);
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgClient, rmg_client_unref);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(RmgClient, rmg_client_unref);
 
 G_END_DECLS

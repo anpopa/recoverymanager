@@ -34,34 +34,34 @@ G_BEGIN_DECLS
  * @param pid Process ID to lookup for
  * @return new allocated string with proc name or NULL if not found
  */
-gchar *                 rmg_utils_get_procname              (pid_t pid);
+gchar *rmg_utils_get_procname(pid_t pid);
 
 /**
  * @brief Get process exe path for pid
  * @param pid Process ID to lookup for
  * @return new allocated string with proc exe or NULL if not found
  */
-gchar *                 rmg_utils_get_procexe               (pid_t pid);
+gchar *rmg_utils_get_procexe(pid_t pid);
 
 /**
  * @brief Get process name for pid
  * @return const string with current os version
  */
-const gchar *           rmg_utils_get_osversion             (void);
+const gchar *rmg_utils_get_osversion(void);
 
 /**
  * @brief Calculate the jankins hash from a string
  * @param key The input string
  * @return The long unsigned int as hash
  */
-guint64                 rmg_utils_jenkins_hash              (const gchar *key);
+guint64 rmg_utils_jenkins_hash(const gchar *key);
 
 /**
  * @brief Get file size
  * @param file_path The path to the file
  * @return The long int as file size or -1 on error
  */
-gint64                  rmg_utils_get_filesize              (const gchar *file_path);
+gint64 rmg_utils_get_filesize(const gchar *file_path);
 
 /**
  * @brief Get pid for process by name
@@ -75,7 +75,7 @@ gint64                  rmg_utils_get_filesize              (const gchar *file_p
  *
  * @return Pid value if found, -1 ottherwise
  */
-pid_t                   rmg_utils_first_pid_for_process     (const gchar *exepath);
+pid_t rmg_utils_first_pid_for_process(const gchar *exepath);
 
 /**
  * @brief Change owner for a filesystem entry
@@ -87,50 +87,48 @@ pid_t                   rmg_utils_first_pid_for_process     (const gchar *exepat
  * @return RMG_STATUS_ERROR on failure
  *         RMG_STATUS_OK in success
  */
-RmgStatus               rmg_utils_chown                     (const gchar *file_path,
-                                                             const gchar *user_name,
-                                                             const gchar *group_name);
+RmgStatus rmg_utils_chown(const gchar *file_path, const gchar *user_name, const gchar *group_name);
 
 /**
  * @brief Get action type from string name
  * @param name Action name
  * @return The action type
  */
-RmgActionType           rmg_utils_action_type_from          (const gchar *name);
+RmgActionType rmg_utils_action_type_from(const gchar *name);
 
 /**
  * @brief Get action type as string name
  * @param type Action type
  * @return Const action name
  */
-const gchar *           rmg_utils_action_name               (RmgActionType type);
+const gchar *rmg_utils_action_name(RmgActionType type);
 
 /**
  * @brief Get friend type from string name
  * @param name Friend name
  * @return The friend type
  */
-RmgFriendType           rmg_utils_friend_type_from          (const gchar *name);
+RmgFriendType rmg_utils_friend_type_from(const gchar *name);
 
 /**
  * @brief Get friend type as string name
  * @param type Friend type
  * @return Const friend name
  */
-const gchar *           rmg_utils_friend_name               (RmgFriendType type);
+const gchar *rmg_utils_friend_name(RmgFriendType type);
 
 /**
  * @brief Get friend action type from string name
  * @param name Friend action name
  * @return The friend action type
  */
-RmgFriendActionType     rmg_utils_friend_action_type_from   (const gchar *name);
+RmgFriendActionType rmg_utils_friend_action_type_from(const gchar *name);
 
 /**
  * @brief Get friend action type as string name
  * @param type Friend action type
  * @return Const friend action name
  */
-const gchar *           rmg_utils_friend_action_name        (RmgFriendActionType type);
+const gchar *rmg_utils_friend_action_name(RmgFriendActionType type);
 
 G_END_DECLS

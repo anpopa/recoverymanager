@@ -30,140 +30,134 @@
  * @brief The RmgFriendTimer data structure
  */
 typedef struct _RmgFriendTimer {
-  RmgExecutor *executor;
-  gchar *service_name;
-  RmgFriendActionType action;
-  glong argument;
+    RmgExecutor *executor;
+    gchar *service_name;
+    RmgFriendActionType action;
+    glong argument;
 } RmgFriendTimer;
 
-static gboolean
-friendtimer_callback (gpointer _ftimer)
+static gboolean friendtimer_callback(gpointer _ftimer)
 {
-  RmgFriendTimer *ftimer = (RmgFriendTimer *)_ftimer;
-  GDBusProxy *sd_manager_proxy = NULL;
+    RmgFriendTimer *ftimer = (RmgFriendTimer *) _ftimer;
+    GDBusProxy *sd_manager_proxy = NULL;
 
-  g_autoptr (GVariant) response = NULL;
-  g_autoptr (GError) error = NULL;
+    g_autoptr(GVariant) response = NULL;
+    g_autoptr(GError) error = NULL;
 
-  g_assert (ftimer);
+    g_assert(ftimer);
 
-  sd_manager_proxy = ftimer->executor->sd_manager_proxy;
+    sd_manager_proxy = ftimer->executor->sd_manager_proxy;
 
-  g_debug ("Friend timer expired for service='%s' action='%s' arg='%ld'",
-           ftimer->service_name,
-           rmg_utils_friend_action_name (ftimer->action),
-           ftimer->argument);
+    g_debug("Friend timer expired for service='%s' action='%s' arg='%ld'",
+            ftimer->service_name,
+            rmg_utils_friend_action_name(ftimer->action),
+            ftimer->argument);
 
-  if ((ftimer->action != FRIEND_ACTION_SIGNAL) && (sd_manager_proxy == NULL))
-    {
-      g_warning ("DBUS action needed for friend, but Manager proxy not available");
-      return FALSE;
+    if ((ftimer->action != FRIEND_ACTION_SIGNAL) && (sd_manager_proxy == NULL)) {
+        g_warning("DBUS action needed for friend, but Manager proxy not available");
+        return FALSE;
     }
 
-  switch (ftimer->action)
-    {
+    switch (ftimer->action) {
     case FRIEND_ACTION_START: {
-      response = g_dbus_proxy_call_sync (sd_manager_proxy,
-                                         "StartUnit",
-                                         g_variant_new ("(ss)", ftimer->service_name, "replace"),
-                                         G_DBUS_CALL_FLAGS_NONE,
-                                         -1,
-                                         NULL,
-                                         &error);
+        response = g_dbus_proxy_call_sync(sd_manager_proxy,
+                                          "StartUnit",
+                                          g_variant_new("(ss)", ftimer->service_name, "replace"),
+                                          G_DBUS_CALL_FLAGS_NONE,
+                                          -1,
+                                          NULL,
+                                          &error);
 
-      if (error != NULL)
-        g_warning ("Fail to call StartUnit on Manager proxy. Error %s", error->message);
-      else
-        g_info ("Request StartUnit for unit='%s' on friend timer callback", ftimer->service_name);
+        if (error != NULL)
+            g_warning("Fail to call StartUnit on Manager proxy. Error %s", error->message);
+        else
+            g_info("Request StartUnit for unit='%s' on friend timer callback",
+                   ftimer->service_name);
     } break;
 
     case FRIEND_ACTION_STOP: {
-      response = g_dbus_proxy_call_sync (sd_manager_proxy,
-                                         "StopUnit",
-                                         g_variant_new ("(ss)", ftimer->service_name, "replace"),
-                                         G_DBUS_CALL_FLAGS_NONE,
-                                         -1,
-                                         NULL,
-                                         &error);
+        response = g_dbus_proxy_call_sync(sd_manager_proxy,
+                                          "StopUnit",
+                                          g_variant_new("(ss)", ftimer->service_name, "replace"),
+                                          G_DBUS_CALL_FLAGS_NONE,
+                                          -1,
+                                          NULL,
+                                          &error);
 
-      if (error != NULL)
-        g_warning ("Fail to call StopUnit on Manager proxy. Error %s", error->message);
-      else
-        g_info ("Request StopUnit for unit='%s' on friend timer callback", ftimer->service_name);
+        if (error != NULL)
+            g_warning("Fail to call StopUnit on Manager proxy. Error %s", error->message);
+        else
+            g_info("Request StopUnit for unit='%s' on friend timer callback", ftimer->service_name);
     } break;
 
     case FRIEND_ACTION_RESTART: {
-      response = g_dbus_proxy_call_sync (sd_manager_proxy,
-                                         "RestartUnit",
-                                         g_variant_new ("(ss)", ftimer->service_name, "replace"),
-                                         G_DBUS_CALL_FLAGS_NONE,
-                                         -1,
-                                         NULL,
-                                         &error);
+        response = g_dbus_proxy_call_sync(sd_manager_proxy,
+                                          "RestartUnit",
+                                          g_variant_new("(ss)", ftimer->service_name, "replace"),
+                                          G_DBUS_CALL_FLAGS_NONE,
+                                          -1,
+                                          NULL,
+                                          &error);
 
-      if (error != NULL)
-        g_warning ("Fail to call RestartUnit on Manager proxy. Error %s", error->message);
-      else
-        g_info ("Request RestartUnit for unit='%s' on friend timer callback", ftimer->service_name);
+        if (error != NULL)
+            g_warning("Fail to call RestartUnit on Manager proxy. Error %s", error->message);
+        else
+            g_info("Request RestartUnit for unit='%s' on friend timer callback",
+                   ftimer->service_name);
     } break;
 
     case FRIEND_ACTION_SIGNAL: {
-      response = g_dbus_proxy_call_sync (sd_manager_proxy,
-                                         "KillUnit",
-                                         g_variant_new ("(ssi)", ftimer->service_name, "main",
-                                                        ftimer->argument),
-                                         G_DBUS_CALL_FLAGS_NONE,
-                                         -1,
-                                         NULL,
-                                         &error);
+        response = g_dbus_proxy_call_sync(
+            sd_manager_proxy,
+            "KillUnit",
+            g_variant_new("(ssi)", ftimer->service_name, "main", ftimer->argument),
+            G_DBUS_CALL_FLAGS_NONE,
+            -1,
+            NULL,
+            &error);
 
-      if (error != NULL)
-        g_warning ("Fail to call RestartUnit on Manager proxy. Error %s", error->message);
-      else
-        g_info ("Request KillUnit for unit='%s' with arg='%ld' on timer callback",
-                ftimer->service_name,
-                ftimer->argument);
+        if (error != NULL)
+            g_warning("Fail to call RestartUnit on Manager proxy. Error %s", error->message);
+        else
+            g_info("Request KillUnit for unit='%s' with arg='%ld' on timer callback",
+                   ftimer->service_name,
+                   ftimer->argument);
     } break;
 
     default:
-      g_warning ("Unknown action for friend");
-      break;
+        g_warning("Unknown action for friend");
+        break;
     }
 
-  return FALSE;
+    return FALSE;
 }
 
-void
-friendtimer_destroy_notify (gpointer _ftimer)
+void friendtimer_destroy_notify(gpointer _ftimer)
 {
-  RmgFriendTimer *ftimer = (RmgFriendTimer *)_ftimer;
+    RmgFriendTimer *ftimer = (RmgFriendTimer *) _ftimer;
 
-  g_assert (ftimer);
+    g_assert(ftimer);
 
-  rmg_executor_unref ((RmgExecutor *)ftimer->executor);
-  g_free (ftimer->service_name);
-  g_free (ftimer);
+    rmg_executor_unref((RmgExecutor *) ftimer->executor);
+    g_free(ftimer->service_name);
+    g_free(ftimer);
 }
 
-void
-rmg_friendtimer_trigger (const gchar *service_name,
-                         RmgFriendActionType action,
-                         glong argument,
-                         gpointer executor,
-                         guint timeout)
+void rmg_friendtimer_trigger(const gchar *service_name,
+                             RmgFriendActionType action,
+                             glong argument,
+                             gpointer executor,
+                             guint timeout)
 {
-  RmgFriendTimer *ftimer = g_new0 (RmgFriendTimer, 1);
+    RmgFriendTimer *ftimer = g_new0(RmgFriendTimer, 1);
 
-  g_assert (service_name);
+    g_assert(service_name);
 
-  ftimer->executor = rmg_executor_ref ((RmgExecutor *)executor);
-  ftimer->service_name = g_strdup (service_name);
-  ftimer->action = action;
-  ftimer->argument = argument;
+    ftimer->executor = rmg_executor_ref((RmgExecutor *) executor);
+    ftimer->service_name = g_strdup(service_name);
+    ftimer->action = action;
+    ftimer->argument = argument;
 
-  (void)g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
-                                    timeout,
-                                    friendtimer_callback,
-                                    ftimer,
-                                    friendtimer_destroy_notify);
+    (void) g_timeout_add_seconds_full(
+        G_PRIORITY_DEFAULT, timeout, friendtimer_callback, ftimer, friendtimer_destroy_notify);
 }

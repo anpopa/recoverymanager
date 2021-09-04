@@ -35,22 +35,18 @@ G_BEGIN_DECLS
  * @enum crashmonitor_event_data
  * @brief CrashMonitor event data type
  */
-typedef enum _CrashMonitorEventType {
-  CRASHMONITOR_EVENT_BUILD_PROXY
-} CrashMonitorEventType;
+typedef enum _CrashMonitorEventType { CRASHMONITOR_EVENT_BUILD_PROXY } CrashMonitorEventType;
 
-typedef gboolean        (*RmgCrashMonitorCallback)          (gpointer _crashmonitor, 
-                                                             gpointer _event);
+typedef gboolean (*RmgCrashMonitorCallback)(gpointer _crashmonitor, gpointer _event);
 
-typedef void            (*RmgCrashMonitorProxyAvailableCb)  (gpointer _dbus_proxy,
-                                                             gpointer _data);
+typedef void (*RmgCrashMonitorProxyAvailableCb)(gpointer _dbus_proxy, gpointer _data);
 
 /**
  * @struct RmgCrashMonitorEvent
  * @brief The file transfer event
  */
 typedef struct _RmgCrashMonitorEvent {
-  CrashMonitorEventType type;                 /**< The event type the element holds */
+    CrashMonitorEventType type; /**< The event type the element holds */
 } RmgCrashMonitorEvent;
 
 /**
@@ -58,8 +54,8 @@ typedef struct _RmgCrashMonitorEvent {
  * @brief The file transfer event
  */
 typedef struct _RmgCrashMonitorNotifyProxy {
-  RmgCrashMonitorProxyAvailableCb callback; 
-  gpointer data;                              /**< Data object to pass with the callback */
+    RmgCrashMonitorProxyAvailableCb callback;
+    gpointer data; /**< Data object to pass with the callback */
 } RmgCrashMonitorNotifyProxy;
 
 /**
@@ -67,53 +63,53 @@ typedef struct _RmgCrashMonitorNotifyProxy {
  * @brief The RmgCrashMonitor opaque data structure
  */
 typedef struct _RmgCrashMonitor {
-  GSource source;                             /**< Event loop source */
-  GAsyncQueue *queue;                         /**< Async queue */
-  RmgCrashMonitorCallback callback;           /**< Callback function */
-  RmgDispatcher *dispatcher;
-  grefcount rc;
-  GList *notify_proxy;
-  GDBusProxy *proxy;
+    GSource source;                   /**< Event loop source */
+    GAsyncQueue *queue;               /**< Async queue */
+    RmgCrashMonitorCallback callback; /**< Callback function */
+    RmgDispatcher *dispatcher;
+    grefcount rc;
+    GList *notify_proxy;
+    GDBusProxy *proxy;
 } RmgCrashMonitor;
 
 /*
  * @brief Create a new crashmonitor object
  * @return On success return a new RmgCrashMonitor object otherwise return NULL
  */
-RmgCrashMonitor *       rmg_crashmonitor_new                (RmgDispatcher *dispatcher);
+RmgCrashMonitor *rmg_crashmonitor_new(RmgDispatcher *dispatcher);
 
 /**
  * @brief Aquire crashmonitor object
  * @param c Pointer to the crashmonitor object
  */
-RmgCrashMonitor *       rmg_crashmonitor_ref                (RmgCrashMonitor *crashmonitor);
+RmgCrashMonitor *rmg_crashmonitor_ref(RmgCrashMonitor *crashmonitor);
 
 /**
  * @brief Release crashmonitor object
  * @param c Pointer to the crashmonitor object
  */
-void                    rmg_crashmonitor_unref              (RmgCrashMonitor *crashmonitor);
+void rmg_crashmonitor_unref(RmgCrashMonitor *crashmonitor);
 
 /**
  * @brief Build DBus proxy
  * @param crashmonitor Pointer to the crashmonitor object
  */
-void                    rmg_crashmonitor_build_proxy        (RmgCrashMonitor *crashmonitor);
+void rmg_crashmonitor_build_proxy(RmgCrashMonitor *crashmonitor);
 
 /**
  * @brief Get a reference to manager proxy
  * @param crashmonitor Pointer to the crashmonitor object
  */
-GDBusProxy *            rmg_crashmonitor_get_manager_proxy  (RmgCrashMonitor *crashmonitor);
+GDBusProxy *rmg_crashmonitor_get_manager_proxy(RmgCrashMonitor *crashmonitor);
 
 /**
  * @brief Get existing services
  * @param crashmonitor Pointer to the crashmonitor object
  */
-void                    rmg_crashmonitor_register_proxy_cb  (RmgCrashMonitor *crashmonitor, 
-                                                             RmgCrashMonitorProxyAvailableCb cb,
-                                                             gpointer data);
+void rmg_crashmonitor_register_proxy_cb(RmgCrashMonitor *crashmonitor,
+                                        RmgCrashMonitorProxyAvailableCb cb,
+                                        gpointer data);
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgCrashMonitor, rmg_crashmonitor_unref);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(RmgCrashMonitor, rmg_crashmonitor_unref);
 
 G_END_DECLS

@@ -46,14 +46,14 @@ G_BEGIN_DECLS
  * @brief The coredump handler manager object
  */
 typedef struct _RmgManager {
-  GSource source;               /**< Event loop source */
-  gpointer tag;                 /**< Unix server socket tag  */
-  grefcount rc;                 /**< Reference counter variable  */
-  gint sockfd;                  /**< Server (manager) unix domain file descriptor */
-  gboolean connected;           /**< Server connection state */
-  struct sockaddr_un saddr;     /**< Server socket addr struct */
-  RmgOptions *opts;             /**< Reference to options object */
-  gpointer dispatcher;          /**< Optional reference to dispatcher */
+    GSource source;           /**< Event loop source */
+    gpointer tag;             /**< Unix server socket tag  */
+    grefcount rc;             /**< Reference counter variable  */
+    gint sockfd;              /**< Server (manager) unix domain file descriptor */
+    gboolean connected;       /**< Server connection state */
+    struct sockaddr_un saddr; /**< Server socket addr struct */
+    RmgOptions *opts;         /**< Reference to options object */
+    gpointer dispatcher;      /**< Optional reference to dispatcher */
 } RmgManager;
 
 /**
@@ -61,41 +61,40 @@ typedef struct _RmgManager {
  * @param opts Pointer to global options object
  * @return A new RmgManager objects
  */
-RmgManager *            rmg_manager_new                     (RmgOptions *opts, 
-                                                             gpointer dispatcher);
+RmgManager *rmg_manager_new(RmgOptions *opts, gpointer dispatcher);
 
 /**
  * @brief Aquire RmgManager object
  * @param manager Manager object
  */
-RmgManager *            rmg_manager_ref                     (RmgManager *manager);
+RmgManager *rmg_manager_ref(RmgManager *manager);
 
 /**
  * @brief Release RmgManager object
  * @param manager Manager object
  */
-void                    rmg_manager_unref                   (RmgManager *manager);
+void rmg_manager_unref(RmgManager *manager);
 
 /**
  * @brief Connect to rmg manager
  * @param manager Manager object
  * @return RMG_STATUS_OK on success
  */
-RmgStatus               rmg_manager_connect                 (RmgManager *manager);
+RmgStatus rmg_manager_connect(RmgManager *manager);
 
 /**
  * @brief Disconnect from rmg manager
  * @param manager Manager object
  * @return RMG_STATUS_OK on success
  */
-RmgStatus               rmg_manager_disconnect              (RmgManager *manager);
+RmgStatus rmg_manager_disconnect(RmgManager *manager);
 
 /**
  * @brief Get connection state
  * @param manager Manager object
  * @return True if connected
  */
-gboolean                rmg_manager_connected               (RmgManager *manager);
+gboolean rmg_manager_connected(RmgManager *manager);
 
 /**
  * @brief Send message to rmg manager
@@ -103,6 +102,6 @@ gboolean                rmg_manager_connected               (RmgManager *manager
  * @param m Message to send
  * @return True if connected
  */
-RmgStatus               rmg_manager_send                    (RmgManager *manager, RmgMessage *m);
+RmgStatus rmg_manager_send(RmgManager *manager, RmgMessage *m);
 
 G_END_DECLS

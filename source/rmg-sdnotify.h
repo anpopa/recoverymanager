@@ -34,36 +34,36 @@ G_BEGIN_DECLS
  * @brief The RmgSDNotify data structure
  */
 typedef struct _RmgSDNotify {
-  GSource *source; /**< Event loop source */
-  grefcount rc;    /**< Reference counter variable  */
+    GSource *source; /**< Event loop source */
+    grefcount rc;    /**< Reference counter variable  */
 } RmgSDNotify;
 
 /*
  * @brief Create a new sdnotify object
  * @return On success return a new RmgSDNotify object otherwise return NULL
  */
-RmgSDNotify *           rmg_sdnotify_new                    (void);
+RmgSDNotify *rmg_sdnotify_new(void);
 
 /**
  * @brief Send ready state to service manager
  * @param sdnotify Pointer to the sdnotify object
  * @return The referenced sdnotify object
  */
-void                    rmg_sdnotify_send_ready             (RmgSDNotify *sdnotify);
+void rmg_sdnotify_send_ready(RmgSDNotify *sdnotify);
 
 /**
  * @brief Aquire sdnotify object
  * @param sdnotify Pointer to the sdnotify object
  * @return The referenced sdnotify object
  */
-RmgSDNotify *           rmg_sdnotify_ref                    (RmgSDNotify *sdnotify);
+RmgSDNotify *rmg_sdnotify_ref(RmgSDNotify *sdnotify);
 
 /**
  * @brief Release sdnotify object
  * @param sdnotify Pointer to the sdnotify object
  */
-void                    rmg_sdnotify_unref                  (RmgSDNotify *sdnotify);
+void rmg_sdnotify_unref(RmgSDNotify *sdnotify);
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgSDNotify, rmg_sdnotify_unref);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(RmgSDNotify, rmg_sdnotify_unref);
 
 G_END_DECLS

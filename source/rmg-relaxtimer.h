@@ -35,19 +35,17 @@ G_BEGIN_DECLS
  * @brief The RmgRelaxTimer opaque data structure
  */
 typedef struct _RmgRelaxTimer {
-  RmgJournal *journal;
-  gchar *service_name;
-  glong rvector;
-  glong timeout;
-  grefcount rc;
+    RmgJournal *journal;
+    gchar *service_name;
+    glong rvector;
+    glong timeout;
+    grefcount rc;
 } RmgRelaxTimer;
 
 /*
  * @brief Create a new relaxtimer object
  * @return On success return a new RmgRelaxTimer object otherwise return NULL
  */
-guint                   rmg_relaxtimer_trigger              (RmgJournal *journal, 
-                                                             const gchar *service_name,
-                                                             GError **error);
+guint rmg_relaxtimer_trigger(RmgJournal *journal, const gchar *service_name, GError **error);
 
 G_END_DECLS

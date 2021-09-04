@@ -35,19 +35,16 @@ G_BEGIN_DECLS
  * @enum checker_event_data
  * @brief Checker event data type
  */
-typedef enum _CheckerEventType {
-  CHECKER_EVENT_CHECK_SERVICES
-} CheckerEventType;
+typedef enum _CheckerEventType { CHECKER_EVENT_CHECK_SERVICES } CheckerEventType;
 
-typedef gboolean        (*RmgCheckerCallback)               (gpointer _checker, 
-                                                             gpointer _event);
+typedef gboolean (*RmgCheckerCallback)(gpointer _checker, gpointer _event);
 
 /**
  * @struct RmgCheckerEvent
  * @brief The file transfer event
  */
 typedef struct _RmgCheckerEvent {
-  CheckerEventType type;        /**< The event type the element holds */
+    CheckerEventType type; /**< The event type the element holds */
 } RmgCheckerEvent;
 
 /**
@@ -55,47 +52,45 @@ typedef struct _RmgCheckerEvent {
  * @brief The RmgChecker opaque data structure
  */
 typedef struct _RmgChecker {
-  GSource source;              /**< Event loop source */
-  GAsyncQueue *queue;          /**< Async queue */
-  RmgCheckerCallback callback; /**< Callback function */
-  grefcount rc;                /**< Reference counter variable  */
-  RmgOptions *options;
-  RmgJournal *journal;
-  GDBusProxy *proxy;
+    GSource source;              /**< Event loop source */
+    GAsyncQueue *queue;          /**< Async queue */
+    RmgCheckerCallback callback; /**< Callback function */
+    grefcount rc;                /**< Reference counter variable  */
+    RmgOptions *options;
+    RmgJournal *journal;
+    GDBusProxy *proxy;
 } RmgChecker;
 
 /*
  * @brief Create a new checker object
  * @return On success return a new RmgChecker object otherwise return NULL
  */
-RmgChecker *            rmg_checker_new                     (RmgJournal *journal,
-                                                             RmgOptions *options);
+RmgChecker *rmg_checker_new(RmgJournal *journal, RmgOptions *options);
 
 /**
  * @brief Aquire checker object
  * @param checker Pointer to the checker object
  */
-RmgChecker *            rmg_checker_ref                     (RmgChecker *checker);
+RmgChecker *rmg_checker_ref(RmgChecker *checker);
 
 /**
  * @brief Release checker object
  * @param checker Pointer to the checker object
  */
-void                    rmg_checker_unref                   (RmgChecker *checker);
+void rmg_checker_unref(RmgChecker *checker);
 
 /**
  * @brief Build DBus proxy
  * @param checker Pointer to the checker object
  */
-void                    rmg_checker_set_proxy               (RmgChecker *checker,
-                                                             GDBusProxy *dbus_proxy);
+void rmg_checker_set_proxy(RmgChecker *checker, GDBusProxy *dbus_proxy);
 
 /**
  * @brief Service integrity checker
  * @param checker Pointer to the checker object
  */
-void                    rmg_checker_check_services          (RmgChecker *checker);
+void rmg_checker_check_services(RmgChecker *checker);
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgChecker, rmg_checker_unref);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(RmgChecker, rmg_checker_unref);
 
 G_END_DECLS

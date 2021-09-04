@@ -31,17 +31,16 @@
 
 G_BEGIN_DECLS
 
-typedef void            (*RmgJournalCallback)               (gpointer _journal, 
-                                                             gpointer _service_name);
+typedef void (*RmgJournalCallback)(gpointer _journal, gpointer _service_name);
 
 /**
  * @struct RmgJournal
  * @brief The RmgJournal opaque data structure
  */
 typedef struct _RmgJournal {
-  RmgOptions *options;
-  sqlite3 *database; /**< The sqlite3 database object */
-  grefcount rc;      /**< Reference counter variable  */
+    RmgOptions *options;
+    sqlite3 *database; /**< The sqlite3 database object */
+    grefcount rc;      /**< Reference counter variable  */
 } RmgJournal;
 
 /**
@@ -51,21 +50,20 @@ typedef struct _RmgJournal {
  * @param error The GError object or NULL
  * @return On success return a new RmgJournal object otherwise return NULL
  */
-RmgJournal *            rmg_journal_new                    (RmgOptions *options, 
-                                                            GError **error);
+RmgJournal *rmg_journal_new(RmgOptions *options, GError **error);
 
 /**
  * @brief Aquire journal object
  * @param journal Pointer to the journal object
  * @return The referenced journal object
  */
-RmgJournal *            rmg_journal_ref                     (RmgJournal *journal);
+RmgJournal *rmg_journal_ref(RmgJournal *journal);
 
 /**
  * @brief Release an journal object
  * @param journal Pointer to the journal object
  */
-void                    rmg_journal_unref                   (RmgJournal *journal);
+void rmg_journal_unref(RmgJournal *journal);
 
 /**
  * @brief Reload units from filesystem
@@ -73,8 +71,7 @@ void                    rmg_journal_unref                   (RmgJournal *journal
  * @param error The GError object or NULL
  * @return On success return RMG_STATUS_OK
  */
-RmgStatus               rmg_journal_reload_units            (RmgJournal *journal, 
-                                                             GError **error);
+RmgStatus rmg_journal_reload_units(RmgJournal *journal, GError **error);
 
 /**
  * @brief Get service hash if exist
@@ -83,9 +80,7 @@ RmgStatus               rmg_journal_reload_units            (RmgJournal *journal
  * @param error The GError object or NULL
  * @return If found return the current version in DB and 0 if not found
  */
-gulong                  rmg_journal_get_hash                (RmgJournal *journal,
-                                                             const gchar *service_name,
-                                                             GError **error);
+gulong rmg_journal_get_hash(RmgJournal *journal, const gchar *service_name, GError **error);
 
 /**
  * @brief Add new service entry in database
@@ -98,14 +93,14 @@ gulong                  rmg_journal_get_hash                (RmgJournal *journal
  * @param error The GError object or NULL
  * @return On success return RMG_STATUS_OK
  */
-RmgStatus               rmg_journal_add_service             (RmgJournal *journal,
-                                                             gulong hash,
-                                                             const gchar *service_name,
-                                                             const gchar *private_data,
-                                                             const gchar *public_data,
-                                                             gboolean check_start,
-                                                             glong timeout,
-                                                             GError **error);
+RmgStatus rmg_journal_add_service(RmgJournal *journal,
+                                  gulong hash,
+                                  const gchar *service_name,
+                                  const gchar *private_data,
+                                  const gchar *public_data,
+                                  gboolean check_start,
+                                  glong timeout,
+                                  GError **error);
 /**
  * @brief Add new action entry in database
  * @param journal Pointer to the journal object
@@ -116,14 +111,14 @@ RmgStatus               rmg_journal_add_service             (RmgJournal *journal
  * @param error The GError object or NULL
  * @return On success return RMG_STATUS_OK
  */
-RmgStatus               rmg_journal_add_action              (RmgJournal *journal,
-                                                             gulong hash,
-                                                             const gchar *service_name,
-                                                             RmgActionType action_type,
-                                                             glong trigger_level_min,
-                                                             glong trigger_level_max,
-                                                             gboolean reset_after,
-                                                             GError **error);
+RmgStatus rmg_journal_add_action(RmgJournal *journal,
+                                 gulong hash,
+                                 const gchar *service_name,
+                                 RmgActionType action_type,
+                                 glong trigger_level_min,
+                                 glong trigger_level_max,
+                                 gboolean reset_after,
+                                 GError **error);
 
 /**
  * @brief Add new friend entry in database
@@ -139,16 +134,16 @@ RmgStatus               rmg_journal_add_action              (RmgJournal *journal
  * @param error The GError object or NULL
  * @return On success return RMG_STATUS_OK
  */
-RmgStatus               rmg_journal_add_friend              (RmgJournal *journal,
-                                                             gulong hash,
-                                                             const gchar *service_name,
-                                                             const gchar *friend_name,
-                                                             const gchar *friend_context,
-                                                             RmgFriendType friend_type,
-                                                             RmgFriendActionType friend_action,
-                                                             glong friend_argument,
-                                                             glong friend_delay,
-                                                             GError **error);
+RmgStatus rmg_journal_add_friend(RmgJournal *journal,
+                                 gulong hash,
+                                 const gchar *service_name,
+                                 const gchar *friend_name,
+                                 const gchar *friend_context,
+                                 RmgFriendType friend_type,
+                                 RmgFriendActionType friend_action,
+                                 glong friend_argument,
+                                 glong friend_delay,
+                                 GError **error);
 /**
  * @brief Get check start value
  * @param journal Pointer to the journal object
@@ -156,9 +151,7 @@ RmgStatus               rmg_journal_add_friend              (RmgJournal *journal
  * @param error The GError object or NULL
  * @return Check start value
  */
-gboolean                rmg_journal_get_checkstart          (RmgJournal *journal,
-                                                             const gchar *service_name,
-                                                             GError **error);
+gboolean rmg_journal_get_checkstart(RmgJournal *journal, const gchar *service_name, GError **error);
 /**
  * @brief Get private data path for service
  * @param journal Pointer to the journal object
@@ -166,9 +159,8 @@ gboolean                rmg_journal_get_checkstart          (RmgJournal *journal
  * @param error The GError object or NULL
  * @return A new allocated string with requested data
  */
-gchar *                 rmg_journal_get_private_data_path   (RmgJournal *journal,
-                                                             const gchar *service_name,
-                                                             GError **error);
+gchar *
+rmg_journal_get_private_data_path(RmgJournal *journal, const gchar *service_name, GError **error);
 /**
  * @brief Get public data path for service
  * @param journal Pointer to the journal object
@@ -176,9 +168,8 @@ gchar *                 rmg_journal_get_private_data_path   (RmgJournal *journal
  * @param error The GError object or NULL
  * @return A new allocated string with requested data
  */
-gchar *                 rmg_journal_get_public_data_path    (RmgJournal *journal,
-                                                             const gchar *service_name,
-                                                             GError **error);
+gchar *
+rmg_journal_get_public_data_path(RmgJournal *journal, const gchar *service_name, GError **error);
 /**
  * @brief Get timeout value
  * @param journal Pointer to the journal object
@@ -186,27 +177,27 @@ gchar *                 rmg_journal_get_public_data_path    (RmgJournal *journal
  * @param error The GError object or NULL
  * @return Timeout value
  */
-glong                   rmg_journal_get_relaxing_timeout    (RmgJournal *journal,
-                                                             const gchar *service_name,
-                                                             GError **error);
+glong rmg_journal_get_relaxing_timeout(RmgJournal *journal,
+                                       const gchar *service_name,
+                                       GError **error);
 /**
  * @brief Call funtion for each relaxing service
  * @param journal Pointer to the journal object
  * @param callback GSourceFunc callback
  * @param error The GError object or NULL
  */
-void                    rmg_journal_call_foreach_relaxing   (RmgJournal *journal,
-                                                             RmgJournalCallback callback,
-                                                             GError **error);
+void rmg_journal_call_foreach_relaxing(RmgJournal *journal,
+                                       RmgJournalCallback callback,
+                                       GError **error);
 /**
  * @brief Call funtion for each service with check start flag set
  * @param journal Pointer to the journal object
  * @param callback GSourceFunc callback
  * @param error The GError object or NULL
  */
-void                    rmg_journal_call_foreach_checkstart (RmgJournal *journal,
-                                                             RmgJournalCallback callback,
-                                                             GError **error);
+void rmg_journal_call_foreach_checkstart(RmgJournal *journal,
+                                         RmgJournalCallback callback,
+                                         GError **error);
 /**
  * @brief Get rvector value
  * @param journal Pointer to the journal object
@@ -214,9 +205,7 @@ void                    rmg_journal_call_foreach_checkstart (RmgJournal *journal
  * @param error The GError object or NULL
  * @return Gradiant value
  */
-glong                   rmg_journal_get_rvector             (RmgJournal *journal,
-                                                             const gchar *service_name,
-                                                             GError **error);
+glong rmg_journal_get_rvector(RmgJournal *journal, const gchar *service_name, GError **error);
 
 /**
  * @brief Set rvector value
@@ -225,10 +214,10 @@ glong                   rmg_journal_get_rvector             (RmgJournal *journal
  * @param error The GError object or NULL
  * @return On success return RMG_STATUS_OK
  */
-RmgStatus               rmg_journal_set_rvector             (RmgJournal *journal,
-                                                             const gchar *service_name,
-                                                             glong rvector,
-                                                             GError **error);
+RmgStatus rmg_journal_set_rvector(RmgJournal *journal,
+                                  const gchar *service_name,
+                                  glong rvector,
+                                  GError **error);
 /**
  * @brief Get current action for service
  * @param journal Pointer to the journal object
@@ -236,9 +225,8 @@ RmgStatus               rmg_journal_set_rvector             (RmgJournal *journal
  * @param error The GError object or NULL
  * @return The current action according with service state
  */
-RmgActionType           rmg_journal_get_service_action      (RmgJournal *journal,
-                                                             const gchar *service_name,
-                                                             GError **error);
+RmgActionType
+rmg_journal_get_service_action(RmgJournal *journal, const gchar *service_name, GError **error);
 /**
  * @brief Get reset after flag for current action for service
  * @param journal Pointer to the journal object
@@ -246,9 +234,9 @@ RmgActionType           rmg_journal_get_service_action      (RmgJournal *journal
  * @param error The GError object or NULL
  * @return True if the reset after flag is set for current action
  */
-gboolean                rmg_journal_get_service_action_reset_after (RmgJournal *journal,
-                                                                    const gchar *service_name,
-                                                                    GError **error);
+gboolean rmg_journal_get_service_action_reset_after(RmgJournal *journal,
+                                                    const gchar *service_name,
+                                                    GError **error);
 
 /**
  * @brief Get services for friend
@@ -259,11 +247,11 @@ gboolean                rmg_journal_get_service_action_reset_after (RmgJournal *
  * @param error The GError object or NULL
  * @return A GList with new allocated structures RmgFriendResponseEntry
  */
-GList *                 rmg_journal_get_services_for_friend (RmgJournal *journal,
-                                                             const gchar *friend_name,
-                                                             const gchar *friend_context,
-                                                             RmgFriendType friend_type,
-                                                             GError **error);
+GList *rmg_journal_get_services_for_friend(RmgJournal *journal,
+                                           const gchar *friend_name,
+                                           const gchar *friend_context,
+                                           RmgFriendType friend_type,
+                                           GError **error);
 /**
  * @brief Remove service
  *
@@ -273,10 +261,9 @@ GList *                 rmg_journal_get_services_for_friend (RmgJournal *journal
  *
  * @return On success return RMG_STATUS_OK
  */
-RmgStatus               rmg_journal_remove_service          (RmgJournal *journal,
-                                                             const gchar *service_name,
-                                                             GError **error);
+RmgStatus
+rmg_journal_remove_service(RmgJournal *journal, const gchar *service_name, GError **error);
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgJournal, rmg_journal_unref);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(RmgJournal, rmg_journal_unref);
 
 G_END_DECLS

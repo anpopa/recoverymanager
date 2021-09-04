@@ -27,238 +27,202 @@
 #include <glib.h>
 #include <stdlib.h>
 
-static gint64 get_long_option (RmgOptions *opts,
-                               const gchar *section_name,
-                               const gchar *property_name,
-                               GError **error);
+static gint64 get_long_option(RmgOptions *opts,
+                              const gchar *section_name,
+                              const gchar *property_name,
+                              GError **error);
 
-RmgOptions *
-rmg_options_new (const gchar *conf_path)
+RmgOptions *rmg_options_new(const gchar *conf_path)
 {
-  RmgOptions *opts = g_new0 (RmgOptions, 1);
+    RmgOptions *opts = g_new0(RmgOptions, 1);
 
-  opts->has_conf = FALSE;
+    opts->has_conf = FALSE;
 
-  if (conf_path != NULL)
-    {
-      g_autoptr (GError) error = NULL;
+    if (conf_path != NULL) {
+        g_autoptr(GError) error = NULL;
 
-      opts->conf = g_key_file_new ();
+        opts->conf = g_key_file_new();
 
-      g_assert (opts->conf);
+        g_assert(opts->conf);
 
-      if (g_key_file_load_from_file (opts->conf, conf_path, G_KEY_FILE_NONE, &error) == TRUE)
-        opts->has_conf = TRUE;
-      else
-        g_debug ("Cannot parse configuration file");
+        if (g_key_file_load_from_file(opts->conf, conf_path, G_KEY_FILE_NONE, &error) == TRUE)
+            opts->has_conf = TRUE;
+        else
+            g_debug("Cannot parse configuration file");
     }
 
-  g_ref_count_init (&opts->rc);
+    g_ref_count_init(&opts->rc);
 
-  return opts;
+    return opts;
 }
 
-RmgOptions *
-rmg_options_ref (RmgOptions *opts)
+RmgOptions *rmg_options_ref(RmgOptions *opts)
 {
-  g_assert (opts);
-  g_ref_count_inc (&opts->rc);
-  return opts;
+    g_assert(opts);
+    g_ref_count_inc(&opts->rc);
+    return opts;
 }
 
-void
-rmg_options_unref (RmgOptions *opts)
+void rmg_options_unref(RmgOptions *opts)
 {
-  g_assert (opts);
+    g_assert(opts);
 
-  if (g_ref_count_dec (&opts->rc) == TRUE)
-    {
-      if (opts->conf)
-        g_key_file_unref (opts->conf);
+    if (g_ref_count_dec(&opts->rc) == TRUE) {
+        if (opts->conf)
+            g_key_file_unref(opts->conf);
 
-      g_free (opts);
+        g_free(opts);
     }
 }
 
-GKeyFile *
-rmg_options_get_key_file (RmgOptions *opts)
+GKeyFile *rmg_options_get_key_file(RmgOptions *opts)
 {
-  g_assert (opts);
-  return opts->conf;
+    g_assert(opts);
+    return opts->conf;
 }
 
-gchar *
-rmg_options_string_for (RmgOptions *opts, RmgOptionsKey key)
+gchar *rmg_options_string_for(RmgOptions *opts, RmgOptionsKey key)
 {
-  switch (key)
-    {
+    switch (key) {
     case KEY_RUN_MODE:
-      if (opts->has_conf)
-        {
-          gchar *tmp = g_key_file_get_string (opts->conf, "recoverymanager", "RunMode", NULL);
+        if (opts->has_conf) {
+            gchar *tmp = g_key_file_get_string(opts->conf, "recoverymanager", "RunMode", NULL);
 
-          if (tmp != NULL)
-            return tmp;
+            if (tmp != NULL)
+                return tmp;
         }
-      return g_strdup (RMG_RUN_MODE);
+        return g_strdup(RMG_RUN_MODE);
 
     case KEY_DATABASE_DIR:
-      if (opts->has_conf)
-        {
-          gchar *tmp = g_key_file_get_string (opts->conf,
-                                              "recoverymanager",
-                                              "DatabaseDirectory",
-                                              NULL);
+        if (opts->has_conf) {
+            gchar *tmp
+                = g_key_file_get_string(opts->conf, "recoverymanager", "DatabaseDirectory", NULL);
 
-          if (tmp != NULL)
-            return tmp;
+            if (tmp != NULL)
+                return tmp;
         }
-      return g_strdup (RMG_DATABASE_DIR);
+        return g_strdup(RMG_DATABASE_DIR);
 
     case KEY_UNITS_DIR:
-      if (opts->has_conf)
-        {
-          gchar *tmp = g_key_file_get_string (opts->conf,
-                                              "recoverymanager",
-                                              "UnitsDirectory",
-                                              NULL);
+        if (opts->has_conf) {
+            gchar *tmp
+                = g_key_file_get_string(opts->conf, "recoverymanager", "UnitsDirectory", NULL);
 
-          if (tmp != NULL)
-            return tmp;
+            if (tmp != NULL)
+                return tmp;
         }
-      return g_strdup (RMG_UNITS_DIR);
+        return g_strdup(RMG_UNITS_DIR);
 
     case KEY_PRIVATE_DATA_RESET_CMD:
-      if (opts->has_conf)
-        {
-          gchar *tmp = g_key_file_get_string (opts->conf,
-                                              "recoverymanager",
-                                              "PrivateDataResetCommand",
-                                              NULL);
+        if (opts->has_conf) {
+            gchar *tmp = g_key_file_get_string(
+                opts->conf, "recoverymanager", "PrivateDataResetCommand", NULL);
 
-          if (tmp != NULL)
-            return tmp;
+            if (tmp != NULL)
+                return tmp;
         }
-      return g_strdup (RMG_PRIVATE_DATA_RESET_CMD);
+        return g_strdup(RMG_PRIVATE_DATA_RESET_CMD);
 
     case KEY_PUBLIC_DATA_RESET_CMD:
-      if (opts->has_conf)
-        {
-          gchar *tmp = g_key_file_get_string (opts->conf,
-                                              "recoverymanager",
-                                              "PublicDataResetCommand",
-                                              NULL);
+        if (opts->has_conf) {
+            gchar *tmp = g_key_file_get_string(
+                opts->conf, "recoverymanager", "PublicDataResetCommand", NULL);
 
-          if (tmp != NULL)
-            return tmp;
+            if (tmp != NULL)
+                return tmp;
         }
-      return g_strdup (RMG_PUBLIC_DATA_RESET_CMD);
+        return g_strdup(RMG_PUBLIC_DATA_RESET_CMD);
 
     case KEY_PLATFORM_RESTART_CMD:
-      if (opts->has_conf)
-        {
-          gchar *tmp = g_key_file_get_string (opts->conf,
-                                              "recoverymanager",
-                                              "PlatformRestartCommand",
-                                              NULL);
+        if (opts->has_conf) {
+            gchar *tmp = g_key_file_get_string(
+                opts->conf, "recoverymanager", "PlatformRestartCommand", NULL);
 
-          if (tmp != NULL)
-            return tmp;
+            if (tmp != NULL)
+                return tmp;
         }
-      return g_strdup (RMG_PLATFORM_RESTART_CMD);
+        return g_strdup(RMG_PLATFORM_RESTART_CMD);
 
     case KEY_FACTORY_RESET_CMD:
-      if (opts->has_conf)
-        {
-          gchar *tmp = g_key_file_get_string (opts->conf,
-                                              "recoverymanager",
-                                              "FactoryResetCommand",
-                                              NULL);
+        if (opts->has_conf) {
+            gchar *tmp
+                = g_key_file_get_string(opts->conf, "recoverymanager", "FactoryResetCommand", NULL);
 
-          if (tmp != NULL)
-            return tmp;
+            if (tmp != NULL)
+                return tmp;
         }
-      return g_strdup (RMG_FACTORY_RESET_CMD);
+        return g_strdup(RMG_FACTORY_RESET_CMD);
 
     case KEY_IPC_SOCK_ADDR:
-      if (opts->has_conf)
-        {
-          gchar *tmp = g_key_file_get_string (opts->conf,
-                                              "recoverymanager",
-                                              "IpcSocketFile",
-                                              NULL);
+        if (opts->has_conf) {
+            gchar *tmp
+                = g_key_file_get_string(opts->conf, "recoverymanager", "IpcSocketFile", NULL);
 
-          if (tmp != NULL)
-            return tmp;
+            if (tmp != NULL)
+                return tmp;
         }
-      return g_strdup (RMG_IPC_SOCK_ADDR);
+        return g_strdup(RMG_IPC_SOCK_ADDR);
 
     default:
-      break;
+        break;
     }
 
-  g_error ("No default value provided for string key");
+    g_error("No default value provided for string key");
 
-  return NULL;
+    return NULL;
 }
 
-static gint64
-get_long_option (RmgOptions *opts,
-                 const gchar *section_name,
-                 const gchar *property_name,
-                 GError **error)
+static gint64 get_long_option(RmgOptions *opts,
+                              const gchar *section_name,
+                              const gchar *property_name,
+                              GError **error)
 {
-  g_assert (opts);
-  g_assert (section_name);
-  g_assert (property_name);
+    g_assert(opts);
+    g_assert(section_name);
+    g_assert(property_name);
 
-  if (opts->has_conf)
-    {
-      g_autofree gchar *tmp = g_key_file_get_string (opts->conf, section_name, property_name, NULL);
+    if (opts->has_conf) {
+        g_autofree gchar *tmp
+            = g_key_file_get_string(opts->conf, section_name, property_name, NULL);
 
-      if (tmp != NULL)
-        {
-          gchar *c = NULL;
-          gint64 ret;
+        if (tmp != NULL) {
+            gchar *c = NULL;
+            gint64 ret;
 
-          ret = g_ascii_strtoll (tmp, &c, 10);
+            ret = g_ascii_strtoll(tmp, &c, 10);
 
-          if (*c != tmp[0])
-            return ret;
+            if (*c != tmp[0])
+                return ret;
         }
     }
 
-  g_set_error_literal (error,
-                       g_quark_from_string ("rmg-options"),
-                       0,
-                       "Cannot convert option to long");
+    g_set_error_literal(
+        error, g_quark_from_string("rmg-options"), 0, "Cannot convert option to long");
 
-  return -1;
+    return -1;
 }
 
-gint64
-rmg_options_long_for (RmgOptions *opts, RmgOptionsKey key)
+gint64 rmg_options_long_for(RmgOptions *opts, RmgOptionsKey key)
 {
-  g_autoptr (GError) error = NULL;
-  gint64 value = 0;
+    g_autoptr(GError) error = NULL;
+    gint64 value = 0;
 
-  switch (key)
-    {
+    switch (key) {
     case KEY_IPC_TIMEOUT_SEC:
-      value = get_long_option (opts, "recoverymanager", "IpcSocketTimeout", &error);
-      if (error != NULL)
-        value = RMG_IPC_TIMEOUT_SEC;
-      break;
+        value = get_long_option(opts, "recoverymanager", "IpcSocketTimeout", &error);
+        if (error != NULL)
+            value = RMG_IPC_TIMEOUT_SEC;
+        break;
 
     case KEY_INTEGRITY_CHECK_SEC:
-      value = get_long_option (opts, "recoverymanager", "IntegrityCheckTimeout", &error);
-      if (error != NULL)
-        value = RMG_INTEGRITY_CHECK_SEC;
-      break;
+        value = get_long_option(opts, "recoverymanager", "IntegrityCheckTimeout", &error);
+        if (error != NULL)
+            value = RMG_INTEGRITY_CHECK_SEC;
+        break;
 
     default:
-      break;
+        break;
     }
 
-  return value;
+    return value;
 }

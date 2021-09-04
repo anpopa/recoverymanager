@@ -23,89 +23,79 @@
 
 #include "rmg-devent.h"
 
-RmgDEvent *
-rmg_devent_new (DispatcherEventType type)
+RmgDEvent *rmg_devent_new(DispatcherEventType type)
 {
-  RmgDEvent *event = g_new0 (RmgDEvent, 1);
+    RmgDEvent *event = g_new0(RmgDEvent, 1);
 
-  event->type = type;
-  g_ref_count_init (&event->rc);
+    event->type = type;
+    g_ref_count_init(&event->rc);
 
-  return event;
+    return event;
 }
 
-RmgDEvent *
-rmg_devent_ref (RmgDEvent *event)
+RmgDEvent *rmg_devent_ref(RmgDEvent *event)
 {
-  g_assert (event);
-  g_ref_count_inc (&event->rc);
-  return event;
+    g_assert(event);
+    g_ref_count_inc(&event->rc);
+    return event;
 }
 
-void
-rmg_devent_unref (RmgDEvent *event)
+void rmg_devent_unref(RmgDEvent *event)
 {
-  g_assert (event);
+    g_assert(event);
 
-  if (g_ref_count_dec (&event->rc) == TRUE)
-    {
-      if (event->service_name != NULL)
-        g_free (event->service_name);
+    if (g_ref_count_dec(&event->rc) == TRUE) {
+        if (event->service_name != NULL)
+            g_free(event->service_name);
 
-      if (event->process_name != NULL)
-        g_free (event->process_name);
+        if (event->process_name != NULL)
+            g_free(event->process_name);
 
-      if (event->object_path != NULL)
-        g_free (event->object_path);
+        if (event->object_path != NULL)
+            g_free(event->object_path);
 
-      if (event->context_name != NULL)
-        g_free (event->context_name);
+        if (event->context_name != NULL)
+            g_free(event->context_name);
 
-      if (event->manager_proxy != NULL)
-        g_object_unref (event->manager_proxy);
+        if (event->manager_proxy != NULL)
+            g_object_unref(event->manager_proxy);
 
-      g_free (event);
+        g_free(event);
     }
 }
 
-void
-rmg_devent_set_type (RmgDEvent *event, DispatcherEventType type)
+void rmg_devent_set_type(RmgDEvent *event, DispatcherEventType type)
 {
-  g_assert (event);
-  event->type = type;
+    g_assert(event);
+    event->type = type;
 }
 
-void
-rmg_devent_set_service_name (RmgDEvent *event, const gchar *service_name)
+void rmg_devent_set_service_name(RmgDEvent *event, const gchar *service_name)
 {
-  g_assert (event);
-  event->service_name = g_strdup (service_name);
+    g_assert(event);
+    event->service_name = g_strdup(service_name);
 }
 
-void
-rmg_devent_set_process_name (RmgDEvent *event, const gchar *process_name)
+void rmg_devent_set_process_name(RmgDEvent *event, const gchar *process_name)
 {
-  g_assert (event);
-  event->process_name = g_strdup (process_name);
+    g_assert(event);
+    event->process_name = g_strdup(process_name);
 }
 
-void
-rmg_devent_set_object_path (RmgDEvent *event, const gchar *object_path)
+void rmg_devent_set_object_path(RmgDEvent *event, const gchar *object_path)
 {
-  g_assert (event);
-  event->object_path = g_strdup (object_path);
+    g_assert(event);
+    event->object_path = g_strdup(object_path);
 }
 
-void
-rmg_devent_set_context_name (RmgDEvent *event, const gchar *context_name)
+void rmg_devent_set_context_name(RmgDEvent *event, const gchar *context_name)
 {
-  g_assert (event);
-  event->context_name = g_strdup (context_name);
+    g_assert(event);
+    event->context_name = g_strdup(context_name);
 }
 
-void
-rmg_devent_set_manager_proxy (RmgDEvent *event, GDBusProxy *manager_proxy)
+void rmg_devent_set_manager_proxy(RmgDEvent *event, GDBusProxy *manager_proxy)
 {
-  g_assert (event);
-  event->manager_proxy = g_object_ref (manager_proxy);
+    g_assert(event);
+    event->manager_proxy = g_object_ref(manager_proxy);
 }
