@@ -34,190 +34,187 @@ G_BEGIN_DECLS
  * @struct RmgAEntry
  * @brief The RmgAEntry data structure
  */
-typedef struct _RmgAEntry {
-    gulong hash;
-    RmgActionType type;
-    glong trigger_level_min;
-    glong trigger_level_max;
-    gboolean reset_after;
+typedef struct _RmgAEntry
+{
+  gulong hash;
+  RmgActionType type;
+  glong trigger_level_min;
+  glong trigger_level_max;
+  gboolean reset_after;
 } RmgAEntry;
 
 /**
  * @struct RmgFEntry
  * @brief The RmgFEntry data structure
  */
-typedef struct _RmgFEntry {
-    gulong hash;
-    gchar *friend_name;
-    gchar *friend_context;
-    RmgFriendType type;
-    RmgFriendActionType action;
-    glong argument;
-    glong delay;
+typedef struct _RmgFEntry
+{
+  gulong hash;
+  gchar *friend_name;
+  gchar *friend_context;
+  RmgFriendType type;
+  RmgFriendActionType action;
+  glong argument;
+  glong delay;
 } RmgFEntry;
 
 /**
  * @struct RmgFEntryParserHelper
  * @brief The RmgFEntry data structure
  */
-typedef struct _RmgFEntryParserHelper {
-    gchar *friend_context; /**< User has to free this string manually  */
-    RmgFriendType type;
-    RmgFriendActionType action;
-    glong argument;
-    glong delay;
+typedef struct _RmgFEntryParserHelper
+{
+  gchar *friend_context; /**< User has to free this string manually  */
+  RmgFriendType type;
+  RmgFriendActionType action;
+  glong argument;
+  glong delay;
 } RmgFEntryParserHelper;
 
 /**
  * @struct RmgJEntry
  * @brief The RmgJEntry opaque data structure
  */
-typedef struct _RmgJEntry {
-    gulong hash;
-    gchar *name;
-    gchar *private_data;
-    gchar *public_data;
-    glong rvector;
-    gboolean relaxing;
-    gboolean check_start;
-    glong timeout;
-    GList *actions;
-    GList *friends;
+typedef struct _RmgJEntry
+{
+  gulong hash;
+  gchar *name;
+  gchar *private_data;
+  gchar *public_data;
+  glong rvector;
+  gboolean relaxing;
+  gboolean check_start;
+  glong timeout;
+  GList *actions;
+  GList *friends;
 
-    GRand *hash_generator;
-    const gchar *parser_current_element;
-    RmgFEntryParserHelper parser_current_friend;
+  GRand *hash_generator;
+  const gchar *parser_current_element;
+  RmgFEntryParserHelper parser_current_friend;
 
-    grefcount rc; /**< Reference counter variable  */
+  grefcount rc; /**< Reference counter variable  */
 } RmgJEntry;
 
-#define RMG_JENTRY_TO_PTR(e) ((gpointer) (RmgJEntry *) (e))
-#define RMG_FENTRY_TO_PTR(e) ((gpointer) (RmgFEntry *) (e))
-#define RMG_AENTRY_TO_PTR(a) ((gpointer) (RmgAEntry *) (a))
+#define RMG_JENTRY_TO_PTR(e) ((gpointer)(RmgJEntry *)(e))
+#define RMG_FENTRY_TO_PTR(e) ((gpointer)(RmgFEntry *)(e))
+#define RMG_AENTRY_TO_PTR(a) ((gpointer)(RmgAEntry *)(a))
 
 /*
  * @brief Create a new jentry object
  * @return On success return a new RmgJEntry object otherwise return NULL
  */
-RmgJEntry *rmg_jentry_new(gulong version);
+RmgJEntry *rmg_jentry_new (gulong version);
 
 /**
  * @brief Aquire jentry object
  * @param jentry Pointer to the jentry object
  */
-RmgJEntry *rmg_jentry_ref(RmgJEntry *jentry);
+RmgJEntry *rmg_jentry_ref (RmgJEntry *jentry);
 
 /**
  * @brief Release jentry object
  * @param jentry Pointer to the jentry object
  */
-void rmg_jentry_unref(RmgJEntry *jentry);
+void rmg_jentry_unref (RmgJEntry *jentry);
 
 /**
  * @brief Setter
  */
-void rmg_jentry_set_name(RmgJEntry *jentry, const gchar *name);
+void rmg_jentry_set_name (RmgJEntry *jentry, const gchar *name);
 
 /**
  * @brief Setter
  */
-void rmg_jentry_set_private_data_path(RmgJEntry *jentry, const gchar *dpath);
+void rmg_jentry_set_private_data_path (RmgJEntry *jentry, const gchar *dpath);
 
 /**
  * @brief Setter
  */
-void rmg_jentry_set_public_data_path(RmgJEntry *jentry, const gchar *dpath);
+void rmg_jentry_set_public_data_path (RmgJEntry *jentry, const gchar *dpath);
 
 /**
  * @brief Setter
  */
-void rmg_jentry_set_rvector(RmgJEntry *jentry, glong rvector);
+void rmg_jentry_set_rvector (RmgJEntry *jentry, glong rvector);
 
 /**
  * @brief Setter
  */
-void rmg_jentry_set_relaxing(RmgJEntry *jentry, gboolean relaxing);
+void rmg_jentry_set_relaxing (RmgJEntry *jentry, gboolean relaxing);
 
 /**
  * @brief Setter
  */
-void rmg_jentry_set_timeout(RmgJEntry *jentry, glong timeout);
+void rmg_jentry_set_timeout (RmgJEntry *jentry, glong timeout);
 
 /**
  * @brief Setter
  */
-void rmg_jentry_set_checkstart(RmgJEntry *jentry, gboolean check_start);
+void rmg_jentry_set_checkstart (RmgJEntry *jentry, gboolean check_start);
 
 /**
  * @brief Setter
  */
-void rmg_jentry_add_action(RmgJEntry *jentry,
-                           RmgActionType type,
-                           glong trigger_level_min,
-                           glong trigger_level_max,
-                           gboolean reset_after);
+void rmg_jentry_add_action (RmgJEntry *jentry, RmgActionType type, glong trigger_level_min,
+                            glong trigger_level_max, gboolean reset_after);
 
 /**
  * @brief Setter
  */
-void rmg_jentry_add_friend(RmgJEntry *jentry,
-                           const gchar *friend_name,
-                           const gchar *friend_context,
-                           RmgFriendType type,
-                           RmgFriendActionType action,
-                           glong argument,
-                           glong delay);
+void rmg_jentry_add_friend (RmgJEntry *jentry, const gchar *friend_name,
+                            const gchar *friend_context, RmgFriendType type,
+                            RmgFriendActionType action, glong argument, glong delay);
 
 /**
  * @brief Getter
  */
-gulong rmg_jentry_get_hash(RmgJEntry *jentry);
+gulong rmg_jentry_get_hash (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-const gchar *rmg_jentry_get_name(RmgJEntry *jentry);
+const gchar *rmg_jentry_get_name (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-const gchar *rmg_jentry_get_private_data_path(RmgJEntry *jentry);
+const gchar *rmg_jentry_get_private_data_path (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-const gchar *rmg_jentry_get_public_data_path(RmgJEntry *jentry);
+const gchar *rmg_jentry_get_public_data_path (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-glong rmg_jentry_get_rvector(RmgJEntry *jentry);
+glong rmg_jentry_get_rvector (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-gboolean rmg_jentry_get_relaxing(RmgJEntry *jentry);
+gboolean rmg_jentry_get_relaxing (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-glong rmg_jentry_get_timeout(RmgJEntry *jentry);
+glong rmg_jentry_get_timeout (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-gboolean rmg_jentry_get_checkstart(RmgJEntry *jentry);
+gboolean rmg_jentry_get_checkstart (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-const GList *rmg_jentry_get_actions(RmgJEntry *jentry);
+const GList *rmg_jentry_get_actions (RmgJEntry *jentry);
 
 /**
  * @brief Getter
  */
-const GList *rmg_jentry_get_friends(RmgJEntry *jentry);
+const GList *rmg_jentry_get_friends (RmgJEntry *jentry);
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(RmgJEntry, rmg_jentry_unref);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgJEntry, rmg_jentry_unref);
 
 G_END_DECLS

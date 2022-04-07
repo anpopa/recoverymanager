@@ -44,17 +44,18 @@ G_BEGIN_DECLS
  * @struct RmgApplication
  * @brief Crashmanager application object
  */
-typedef struct _RmgApplication {
-    RmgOptions *options;
-    RmgJournal *journal;
-    RmgSDNotify *sdnotify;
-    RmgMonitor *monitor;
-    RmgChecker *checker;
-    RmgDispatcher *dispatcher;
-    RmgExecutor *executor;
-    RmgCrashMonitor *crashmonitor;
-    GMainLoop *mainloop;
-    grefcount rc;
+typedef struct _RmgApplication
+{
+  RmgOptions *options;
+  RmgJournal *journal;
+  RmgSDNotify *sdnotify;
+  RmgMonitor *monitor;
+  RmgChecker *checker;
+  RmgDispatcher *dispatcher;
+  RmgExecutor *executor;
+  RmgCrashMonitor *crashmonitor;
+  GMainLoop *mainloop;
+  grefcount rc;
 } RmgApplication;
 
 /**
@@ -65,35 +66,35 @@ typedef struct _RmgApplication {
  * returned object. If the error is set the object is invalid and needs to be
  * released.
  */
-RmgApplication *rmg_application_new(const gchar *config, GError **error);
+RmgApplication *rmg_application_new (const gchar *config, GError **error);
 
 /**
  * @brief Aquire RmgApplication object
  * @param app The object to aquire
  * @return The aquiered app object
  */
-RmgApplication *rmg_application_ref(RmgApplication *app);
+RmgApplication *rmg_application_ref (RmgApplication *app);
 
 /**
  * @brief Release RmgApplication object
  * @param app The rmg application object to release
  */
-void rmg_application_unref(RmgApplication *app);
+void rmg_application_unref (RmgApplication *app);
 
 /**
  * @brief Execute RmgApplication
  * @param app The RmgApplicationn object
  * @return If run was succesful RMG_STATUS_OK is returned
  */
-RmgStatus rmg_application_execute(RmgApplication *app);
+RmgStatus rmg_application_execute (RmgApplication *app);
 
 /**
  * @brief Get main event loop reference
  * @param app The RmgApplicationn object
  * @return A pointer to the main event loop
  */
-GMainLoop *rmg_application_get_mainloop(RmgApplication *app);
+GMainLoop *rmg_application_get_mainloop (RmgApplication *app);
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(RmgApplication, rmg_application_unref);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgApplication, rmg_application_unref);
 
 G_END_DECLS

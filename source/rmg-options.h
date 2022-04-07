@@ -33,52 +33,54 @@ G_BEGIN_DECLS
  * @enum RmgOptionsKey
  * @brief The option keys
  */
-typedef enum _RmgOptionsKey {
-    KEY_RUN_MODE,
-    KEY_UNITS_DIR,
-    KEY_DATABASE_DIR,
-    KEY_PUBLIC_DATA_RESET_CMD,
-    KEY_PRIVATE_DATA_RESET_CMD,
-    KEY_PLATFORM_RESTART_CMD,
-    KEY_FACTORY_RESET_CMD,
-    KEY_IPC_SOCK_ADDR,
-    KEY_IPC_TIMEOUT_SEC,
-    KEY_INTEGRITY_CHECK_SEC
+typedef enum _RmgOptionsKey
+{
+  KEY_RUN_MODE,
+  KEY_UNITS_DIR,
+  KEY_DATABASE_DIR,
+  KEY_PUBLIC_DATA_RESET_CMD,
+  KEY_PRIVATE_DATA_RESET_CMD,
+  KEY_PLATFORM_RESTART_CMD,
+  KEY_FACTORY_RESET_CMD,
+  KEY_IPC_SOCK_ADDR,
+  KEY_IPC_TIMEOUT_SEC,
+  KEY_INTEGRITY_CHECK_SEC
 } RmgOptionsKey;
 
 /**
  * @struct RmgOptions
  * @brief The RmgOptions opaque data structure
  */
-typedef struct _RmgOptions {
-    GKeyFile *conf;    /**< The GKeyFile object */
-    gboolean has_conf; /**< Flag to check if a runtime option object is available */
-    grefcount rc;      /**< Reference counter variable  */
+typedef struct _RmgOptions
+{
+  GKeyFile *conf;    /**< The GKeyFile object */
+  gboolean has_conf; /**< Flag to check if a runtime option object is available */
+  grefcount rc;      /**< Reference counter variable  */
 } RmgOptions;
 
 /*
  * @brief Create a new options object
  * @return On success return a new RmgOptions object otherwise return NULL
  */
-RmgOptions *rmg_options_new(const gchar *conf_path);
+RmgOptions *rmg_options_new (const gchar *conf_path);
 
 /*
  * @brief Aquire options object
  * @return On success return a new RmgOptions object otherwise return NULL
  */
-RmgOptions *rmg_options_ref(RmgOptions *opts);
+RmgOptions *rmg_options_ref (RmgOptions *opts);
 
 /**
  * @brief Release an options object
  * @param opts Pointer to the options object
  */
-void rmg_options_unref(RmgOptions *opts);
+void rmg_options_unref (RmgOptions *opts);
 
 /**
  * @brief Get the GKeyFile object
  * @param opts Pointer to the options object
  */
-GKeyFile *rmg_options_get_key_file(RmgOptions *opts);
+GKeyFile *rmg_options_get_key_file (RmgOptions *opts);
 
 /*
  * @brief Get a configuration value string for key
@@ -88,7 +90,7 @@ GKeyFile *rmg_options_get_key_file(RmgOptions *opts);
  * @return On success return a reference to the optional value otherwise return
  * NULL
  */
-gchar *rmg_options_string_for(RmgOptions *opts, RmgOptionsKey key);
+gchar *rmg_options_string_for (RmgOptions *opts, RmgOptionsKey key);
 
 /*
  * @brief Get a configuration gint64 value for key
@@ -98,6 +100,6 @@ gchar *rmg_options_string_for(RmgOptions *opts, RmgOptionsKey key);
  * @return On success return a reference to the optional value otherwise return
  * NULL
  */
-gint64 rmg_options_long_for(RmgOptions *opts, RmgOptionsKey key);
+gint64 rmg_options_long_for (RmgOptions *opts, RmgOptionsKey key);
 
 G_END_DECLS

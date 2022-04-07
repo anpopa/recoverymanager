@@ -35,14 +35,15 @@ G_BEGIN_DECLS
  * @struct RmgServer
  * @brief The RmgServer opaque data structure
  */
-typedef struct _RmgServer {
-    GSource source;      /**< Event loop source */
-    grefcount rc;        /**< Reference counter variable  */
-    gpointer tag;        /**< Unix server socket tag  */
-    gint sockfd;         /**< Module file descriptor (server listen fd) */
-    RmgOptions *options; /**< Own reference to global options */
-    gpointer dispatcher; /**< A pointer to dispatcher. Not owned and optional */
-    GList *clients;      /**< Active clients list */
+typedef struct _RmgServer
+{
+  GSource source;      /**< Event loop source */
+  grefcount rc;        /**< Reference counter variable  */
+  gpointer tag;        /**< Unix server socket tag  */
+  gint sockfd;         /**< Module file descriptor (server listen fd) */
+  RmgOptions *options; /**< Own reference to global options */
+  gpointer dispatcher; /**< A pointer to dispatcher. Not owned and optional */
+  GList *clients;      /**< Active clients list */
 } RmgServer;
 
 /*
@@ -57,49 +58,49 @@ typedef struct _RmgServer {
  *
  * @return On success return a new RmgServer object otherwise return NULL
  */
-RmgServer *rmg_server_new(RmgOptions *options, gpointer dispatcher, GError **error);
+RmgServer *rmg_server_new (RmgOptions *options, gpointer dispatcher, GError **error);
 
 /**
  * @brief Aquire server object
  * @param server Pointer to the server object
  * @return The referenced server object
  */
-RmgServer *rmg_server_ref(RmgServer *server);
+RmgServer *rmg_server_ref (RmgServer *server);
 
 /**
  * @brief Start the server an listen for clients
  * @param server Pointer to the server object
  * @return If server starts listening the function return RMG_STATUS_OK
  */
-RmgStatus rmg_server_bind_and_listen(RmgServer *server);
+RmgStatus rmg_server_bind_and_listen (RmgServer *server);
 
 /**
  * @brief Add client reference
  * @param server Pointer to the server object
  * @param client Pointer to the client object
  */
-void rmg_server_add_client(RmgServer *server, gpointer client);
+void rmg_server_add_client (RmgServer *server, gpointer client);
 
 /**
  * @brief Rem client reference
  * @param server Pointer to the server object
  * @param client Pointer to the client object
  */
-void rmg_server_rem_client(RmgServer *server, gpointer client);
+void rmg_server_rem_client (RmgServer *server, gpointer client);
 
 /**
  * @brief Get client reference
  * @param server Pointer to the server object
  * @param client Pointer to the client object
  */
-gpointer rmg_server_get_client(RmgServer *server, const gchar *name);
+gpointer rmg_server_get_client (RmgServer *server, const gchar *name);
 
 /**
  * @brief Release server object
  * @param server Pointer to the server object
  */
-void rmg_server_unref(RmgServer *server);
+void rmg_server_unref (RmgServer *server);
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(RmgServer, rmg_server_unref);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgServer, rmg_server_unref);
 
 G_END_DECLS

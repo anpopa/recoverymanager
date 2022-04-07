@@ -29,14 +29,22 @@
 G_BEGIN_DECLS
 
 #ifndef RMG_UNUSED
-#define RMG_UNUSED(x) (void) (x)
+#define RMG_UNUSED(x) (void)(x)
 #endif
 
-#define RMG_EVENT_SOURCE(x) (GSource *) (x)
+#define RMG_EVENT_SOURCE(x) (GSource *)(x)
 
-typedef enum _RmgStatus { RMG_STATUS_ERROR = -1, RMG_STATUS_OK } RmgStatus;
+typedef enum _RmgStatus
+{
+  RMG_STATUS_ERROR = -1,
+  RMG_STATUS_OK
+} RmgStatus;
 
-typedef enum _RmgRunMode { RUN_MODE_PRIMARY, RUN_MODE_REPLICA } RmgRunMode;
+typedef enum _RmgRunMode
+{
+  RUN_MODE_PRIMARY,
+  RUN_MODE_REPLICA
+} RmgRunMode;
 
 /**
  * @enum Action type
@@ -44,52 +52,56 @@ typedef enum _RmgRunMode { RUN_MODE_PRIMARY, RUN_MODE_REPLICA } RmgRunMode;
  *   Actions with an ID higher or equal ACTION_CONTEXT_RESET will be performed
  *   by primary instance only.
  */
-typedef enum _RmgActionType {
-    ACTION_INVALID,
-    ACTION_SERVICE_IGNORE,
-    ACTION_SERVICE_RESET,
-    ACTION_PUBLIC_DATA_RESET,
-    ACTION_PRIVATE_DATA_RESET,
-    ACTION_SERVICE_DISABLE,
-    ACTION_CONTEXT_RESET,
-    ACTION_PLATFORM_RESTART,
-    ACTION_FACTORY_RESET,
-    ACTION_GURU_MEDITATION /* must be the last entry */
+typedef enum _RmgActionType
+{
+  ACTION_INVALID,
+  ACTION_SERVICE_IGNORE,
+  ACTION_SERVICE_RESET,
+  ACTION_PUBLIC_DATA_RESET,
+  ACTION_PRIVATE_DATA_RESET,
+  ACTION_SERVICE_DISABLE,
+  ACTION_CONTEXT_RESET,
+  ACTION_PLATFORM_RESTART,
+  ACTION_FACTORY_RESET,
+  ACTION_GURU_MEDITATION /* must be the last entry */
 } RmgActionType;
 
 /**
  * @enum Friend type
  * @brief The type of friend
  */
-typedef enum _RmgFriendType {
-    FRIEND_UNKNOWN,
-    FRIEND_PROCESS,
-    FRIEND_SERVICE,
-    FRIEND_INVALID
+typedef enum _RmgFriendType
+{
+  FRIEND_UNKNOWN,
+  FRIEND_PROCESS,
+  FRIEND_SERVICE,
+  FRIEND_INVALID
 } RmgFriendType;
 
 /**
  * @enum Friend action type
  * @brief The type of friend action
  */
-typedef enum _RmgFriendActionType {
-    FRIEND_ACTION_UNKNOWN,
-    FRIEND_ACTION_START,
-    FRIEND_ACTION_STOP,
-    FRIEND_ACTION_RESTART,
-    FRIEND_ACTION_SIGNAL,
-    FRIEND_ACTION_INVALID
+typedef enum _RmgFriendActionType
+{
+  FRIEND_ACTION_UNKNOWN,
+  FRIEND_ACTION_START,
+  FRIEND_ACTION_STOP,
+  FRIEND_ACTION_RESTART,
+  FRIEND_ACTION_SIGNAL,
+  FRIEND_ACTION_INVALID
 } RmgFriendActionType;
 
 /**
  * @struct RmgFriendResponseEntry
  * @brief The RmgFriendResponseEntry data structure
  */
-typedef struct _RmgFriendResponseEntry {
-    gchar *service_name;
-    RmgFriendActionType action;
-    glong argument;
-    glong delay;
+typedef struct _RmgFriendResponseEntry
+{
+  gchar *service_name;
+  RmgFriendActionType action;
+  glong argument;
+  glong delay;
 } RmgFriendResponseEntry;
 
 /* Preserve the size and order from RmgActionType */

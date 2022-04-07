@@ -39,49 +39,50 @@ G_BEGIN_DECLS
  * @function RmgDispatcherCallback
  * @brief Custom callback used internally by RmgDispatcher as source callback
  */
-typedef gboolean (*RmgDispatcherCallback)(gpointer _dispatcher, gpointer _event);
+typedef gboolean (*RmgDispatcherCallback) (gpointer _dispatcher, gpointer _event);
 
 /**
  * @struct RmgDispatcher
  * @brief The RmgDispatcher opaque data structure
  */
-typedef struct _RmgDispatcher {
-    GSource source;                 /**< Event loop source */
-    GAsyncQueue *queue;             /**< Async queue */
-    RmgDispatcherCallback callback; /**< Dispatcher callback function */
-    RmgOptions *options;
-    RmgJournal *journal;
-    RmgExecutor *executor;
-    RmgServer *server;
-    RmgManager *manager;
-    grefcount rc;
+typedef struct _RmgDispatcher
+{
+  GSource source;                 /**< Event loop source */
+  GAsyncQueue *queue;             /**< Async queue */
+  RmgDispatcherCallback callback; /**< Dispatcher callback function */
+  RmgOptions *options;
+  RmgJournal *journal;
+  RmgExecutor *executor;
+  RmgServer *server;
+  RmgManager *manager;
+  grefcount rc;
 } RmgDispatcher;
 
 /*
  * @brief Create a new dispatcher object
  * @return On success return a new RmgDispatcher object otherwise return NULL
  */
-RmgDispatcher *
-rmg_dispatcher_new(RmgOptions *options, RmgJournal *journal, RmgExecutor *executor, GError **error);
+RmgDispatcher *rmg_dispatcher_new (RmgOptions *options, RmgJournal *journal, RmgExecutor *executor,
+                                   GError **error);
 
 /**
  * @brief Aquire dispatcher object
  * @param c Pointer to the dispatcher object
  */
-RmgDispatcher *rmg_dispatcher_ref(RmgDispatcher *dispatcher);
+RmgDispatcher *rmg_dispatcher_ref (RmgDispatcher *dispatcher);
 
 /**
  * @brief Release dispatcher object
  * @param c Pointer to the dispatcher object
  */
-void rmg_dispatcher_unref(RmgDispatcher *dispatcher);
+void rmg_dispatcher_unref (RmgDispatcher *dispatcher);
 
 /**
  * @brief Push a service event
  * @param c Pointer to the dispatcher object
  */
-void rmg_dispatcher_push_service_event(RmgDispatcher *dispatcher, RmgDEvent *event);
+void rmg_dispatcher_push_service_event (RmgDispatcher *dispatcher, RmgDEvent *event);
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(RmgDispatcher, rmg_dispatcher_unref);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (RmgDispatcher, rmg_dispatcher_unref);
 
 G_END_DECLS

@@ -32,10 +32,7 @@ G_BEGIN_DECLS
 /*
  * @brief Create a new friendtimer object
  */
-void rmg_friendtimer_trigger(const gchar *service_name,
-                             RmgFriendActionType action,
-                             glong argument,
-                             gpointer executor,
-                             guint timeout);
+void rmg_friendtimer_trigger (const gchar *service_name, RmgFriendActionType action, glong argument,
+                              gpointer executor, guint timeout);
 
 G_END_DECLS
